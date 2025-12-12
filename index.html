@@ -1,0 +1,4218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sentech Platform | Authenticate</title>
+    <!-- Firebase SDK -->
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, query, where, getDocs, onSnapshot, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBjFgn3WOp59KzXani4cBj1d6yQcsgAAiU",
+            authDomain: "myplatform-37fea.firebaseapp.com",
+            projectId: "myplatform-37fea",
+            storageBucket: "myplatform-37fea.firebasestorage.app",
+            messagingSenderId: "1025031599228",
+            appId: "1:1025031599228:web:a4c6ca2aa6df30989605f9",
+            measurementId: "G-5FKXBQQ8GK"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        
+        // Make auth and db available globally
+        window.auth = auth;
+        window.db = db;
+        window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
+        window.signInWithEmailAndPassword = signInWithEmailAndPassword;
+        window.sendPasswordResetEmail = sendPasswordResetEmail;
+        window.onAuthStateChanged = onAuthStateChanged;
+        window.signOut = signOut;
+        window.getFirestore = getFirestore;
+        window.doc = doc;
+        window.setDoc = setDoc;
+        window.getDoc = getDoc;
+        window.updateDoc = updateDoc;
+        window.collection = collection;
+        window.query = query;
+        window.where = where;
+        window.getDocs = getDocs;
+        window.onSnapshot = onSnapshot;
+        window.addDoc = addDoc;
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        :root {
+            --primary: #1E3A8A;
+            --primary-light: #3B82F6;
+            --secondary: #0EA5E9;
+            --secondary-light: #38BDF8;
+            --accent: #06B6D4;
+            --dark: #1E293B;
+            --light: #F0F9FF;
+            --white: #FFFFFF;
+            --gray: #8D99AE;
+            --success: #10B981;
+            --warning: #F59E0B;
+            --error: #EF4444;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1E3A8A, #0EA5E9);
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--dark);
+            overflow-x: hidden;
+        }
+
+        /* Animated cubes background */
+        .animated-cubes {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: -1;
+        }
+
+        .cube {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            animation: float 20s infinite linear;
+            border-radius: 5px;
+        }
+
+        .cube:nth-child(1) {
+            width: 80px;
+            height: 80px;
+            top: 10%;
+            left: 10%;
+            animation-delay: 0s;
+        }
+
+        .cube:nth-child(2) {
+            width: 120px;
+            height: 120px;
+            top: 60%;
+            left: 80%;
+            animation-delay: -5s;
+        }
+
+        .cube:nth-child(3) {
+            width: 60px;
+            height: 60px;
+            top: 80%;
+            left: 20%;
+            animation-delay: -10s;
+        }
+
+        .cube:nth-child(4) {
+            width: 100px;
+            height: 100px;
+            top: 20%;
+            left: 70%;
+            animation-delay: -15s;
+        }
+
+        .cube:nth-child(5) {
+            width: 70px;
+            height: 70px;
+            top: 50%;
+            left: 40%;
+            animation-delay: -2s;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 0.5;
+            }
+            50% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-1000px) rotate(720deg);
+                opacity: 0;
+            }
+        }
+
+        /* Auth Section Styles */
+        #auth-section {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .platform-container {
+            width: 100%;
+            max-width: 420px;
+            background: var(--white);
+            border-radius: 20px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            position: relative;
+            z-index: 10;
+        }
+
+        .platform-header {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: var(--white);
+            text-align: center;
+            padding: 30px 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .platform-header h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .platform-header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .platform-bar {
+            height: 8px;
+            background: linear-gradient(to right, var(--secondary), var(--secondary-light), var(--secondary));
+            position: relative;
+        }
+
+        .form-container {
+            padding: 30px;
+        }
+
+        .form-toggle {
+            display: flex;
+            margin-bottom: 25px;
+            background: #f5f5f5;
+            border-radius: 50px;
+            padding: 5px;
+            position: relative;
+        }
+
+        .toggle-btn {
+            flex: 1;
+            text-align: center;
+            padding: 12px;
+            cursor: pointer;
+            border-radius: 50px;
+            transition: var(--transition);
+            font-weight: 600;
+            z-index: 1;
+        }
+
+        .toggle-btn.active {
+            color: var(--white);
+        }
+
+        .toggle-slider {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            width: calc(50% - 5px);
+            height: calc(100% - 10px);
+            background: linear-gradient(to right, var(--primary), var(--primary-light));
+            border-radius: 50px;
+            transition: var(--transition);
+        }
+
+        .form {
+            display: none;
+            animation: fadeIn 0.5s ease forwards;
+        }
+
+        .form.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--dark);
+            transition: color 0.3s;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 14px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: var(--transition);
+            background: #f9f9f9;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.2);
+            outline: none;
+            background: var(--white);
+        }
+
+        .password-strength {
+            height: 4px;
+            background: #e0e0e0;
+            border-radius: 2px;
+            margin-top: 5px;
+            overflow: hidden;
+        }
+
+        .strength-meter {
+            height: 100%;
+            width: 0;
+            border-radius: 2px;
+            transition: var(--transition);
+        }
+
+        .form-options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .remember-me {
+            display: flex;
+            align-items: center;
+        }
+
+        .remember-me input {
+            margin-right: 8px;
+        }
+
+        .forgot-password {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .forgot-password:hover {
+            color: var(--primary-light);
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(to right, var(--primary), var(--primary-light));
+            color: var(--white);
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: 0 4px 15px rgba(30, 58, 138, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(30, 58, 138, 0.4);
+        }
+
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+
+        .submit-btn::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.5);
+            opacity: 0;
+            border-radius: 100%;
+            transform: scale(1, 1) translate(-50%);
+            transform-origin: 50% 50%;
+        }
+
+        .submit-btn:focus:not(:active)::after {
+            animation: ripple 1s ease-out;
+        }
+
+        @keyframes ripple {
+            0% {
+                transform: scale(0, 0);
+                opacity: 0.5;
+            }
+            100% {
+                transform: scale(20, 20);
+                opacity: 0;
+            }
+        }
+
+        .platform-decoration {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            opacity: 0.1;
+            z-index: 0;
+        }
+
+        .platform-1 {
+            top: 10%;
+            left: 5%;
+            background: radial-gradient(circle, var(--secondary) 40%, transparent 41%),
+                        radial-gradient(circle, var(--primary) 30%, transparent 31%);
+            background-size: 20px 20px;
+            border-radius: 50%;
+        }
+
+        .platform-2 {
+            bottom: 10%;
+            right: 5%;
+            background: radial-gradient(circle, var(--secondary) 40%, transparent 41%),
+                        radial-gradient(circle, var(--accent) 25%, transparent 26%);
+            background-size: 20px 20px;
+            border-radius: 50%;
+        }
+
+        .password-info {
+            font-size: 0.8rem;
+            color: var(--gray);
+            margin-top: 5px;
+        }
+
+        .message {
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            text-align: center;
+            font-weight: 500;
+            display: none;
+        }
+
+        .success {
+            background-color: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+            border: 1px solid var(--success);
+        }
+
+        .error {
+            background-color: rgba(239, 68, 68, 0.2);
+            color: var(--error);
+            border: 1px solid var(--error);
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Dashboard Section Styles */
+        #dashboard-section {
+            display: none;
+        }
+
+        .dashboard-container {
+            max-width: 480px;
+            margin: 0 auto;
+            background-color: var(--white);
+            min-height: 90vh;
+            border-radius: 20px;
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow-x: hidden;
+            padding-bottom: 80px;
+        }
+        
+        /* Header Styles */
+        .header {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: var(--white);
+            padding: 20px;
+            position: relative;
+            border-radius: 20px 20px 0 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100" opacity="0.1"><rect x="20" y="20" width="60" height="60" rx="5" fill="%230EA5E9" /></svg>');
+            background-size: 50px;
+            z-index: 1;
+        }
+        
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .platform-logo {
+            font-weight: bold;
+            font-size: 28px;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .action-buttons {
+            display: flex;
+            justify-content: space-between;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 30px;
+            padding: 8px 15px;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .action-btn {
+            color: var(--white);
+            font-size: 14px;
+            text-align: center;
+            flex: 1;
+            transition: var(--transition);
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 20px;
+        }
+        
+        .action-btn:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        /* Banner Slider */
+        .banner-slider {
+            position: relative;
+            height: 200px;
+            overflow: hidden;
+            margin: 20px 15px;
+            border-radius: 15px;
+            box-shadow: var(--shadow);
+        }
+        
+        .slider-container {
+            display: flex;
+            transition: transform 0.5s ease;
+            height: 100%;
+        }
+        
+        .slide {
+            min-width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: 20px;
+            color: var(--white);
+            position: relative;
+        }
+        
+        .slide::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.7) 100%);
+            z-index: 1;
+        }
+        
+        .slide-content {
+            position: relative;
+            z-index: 2;
+        }
+        
+        .slide-title {
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .slide-description {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .slider-indicators {
+            position: absolute;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 8px;
+            z-index: 3;
+        }
+        
+        .indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .indicator.active {
+            background-color: var(--secondary);
+            transform: scale(1.2);
+        }
+        
+        /* Balance Section */
+        .balance-section {
+            padding: 20px;
+            background-color: var(--white);
+            border-radius: 15px;
+            margin: 0 15px 20px;
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .balance-section::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            width: 80px;
+            height: 80px;
+            background-color: var(--secondary-light);
+            border-radius: 50%;
+            opacity: 0.3;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            color: var(--dark);
+            margin-bottom: 15px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .section-title i {
+            color: var(--primary);
+        }
+        
+        .balance-cards {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .balance-card {
+            flex: 1;
+            background-color: var(--white);
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            transition: var(--transition);
+            cursor: pointer;
+            border: 2px solid transparent;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+        }
+        
+        .balance-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+            border-color: var(--primary);
+        }
+        
+        .balance-card.primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: var(--white);
+        }
+        
+        .balance-value {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 10px 0 5px;
+        }
+        
+        .balance-label {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+        
+        /* Menu Section */
+        .menu-section {
+            padding: 20px;
+            margin: 0 15px 20px;
+        }
+        
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+        
+        .menu-item {
+            background-color: var(--white);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .menu-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .menu-image {
+            height: 120px;
+            background-size: cover;
+            background-position: center;
+            position: relative;
+        }
+        
+        .menu-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: var(--accent);
+            color: var(--white);
+            font-size: 10px;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-weight: bold;
+        }
+        
+        .menu-details {
+            padding: 15px;
+        }
+        
+        .menu-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 16px;
+        }
+        
+        .menu-price {
+            color: var(--primary);
+            font-weight: bold;
+            font-size: 18px;
+        }
+        
+        .menu-earnings {
+            color: var(--dark);
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        
+        /* Investment Section */
+        .investment-section {
+            padding: 20px;
+            margin: 0 15px 20px;
+        }
+        
+        .investment-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+        
+        .investment-item {
+            background-color: var(--white);
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: var(--shadow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: var(--transition);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .investment-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .investment-details {
+            flex: 1;
+            z-index: 2;
+        }
+        
+        .investment-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 16px;
+        }
+        
+        .investment-info {
+            color: var(--dark);
+            font-size: 14px;
+        }
+        
+        .investment-amount {
+            font-weight: bold;
+            font-size: 18px;
+            color: var(--primary);
+            z-index: 2;
+        }
+        
+        .investment-image {
+            position: absolute;
+            right: 0;
+            top: 0;
+            width: 80px;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            opacity: 0.3;
+            z-index: 1;
+        }
+        
+        /* My Profile Section */
+        .myprofile-section {
+            padding: 20px;
+            margin: 0 15px 20px;
+        }
+        
+        .profile-card {
+            background-color: var(--white);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            text-align: center;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .profile-card::before {
+            content: '';
+            position: absolute;
+            top: -20px;
+            left: -20px;
+            width: 80px;
+            height: 80px;
+            background-color: var(--secondary-light);
+            border-radius: 50%;
+            opacity: 0.3;
+        }
+        
+        .profile-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--white);
+            font-weight: bold;
+            font-size: 24px;
+            margin: 0 auto 15px;
+            border: 3px solid var(--secondary);
+        }
+        
+        .profile-name {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .profile-email {
+            color: var(--dark);
+            margin-bottom: 15px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background-color: var(--white);
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+            transition: var(--transition);
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .stat-value {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            color: var(--dark);
+        }
+        
+        .wallet-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .wallet-card {
+            background-color: var(--white);
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: var(--shadow);
+            text-align: center;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+        
+        .wallet-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .wallet-card.primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: var(--white);
+        }
+        
+        .wallet-icon {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        
+        .wallet-value {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .wallet-label {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+        
+        .action-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .action-card {
+            background-color: var(--white);
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: var(--shadow);
+            text-align: center;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+        
+        .action-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .action-icon {
+            font-size: 24px;
+            margin-bottom: 10px;
+            color: var(--primary);
+        }
+        
+        .action-label {
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .settings-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .settings-item {
+            background-color: var(--white);
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: var(--shadow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+        
+        .settings-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .settings-details {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .settings-icon {
+            font-size: 20px;
+            color: var(--primary);
+        }
+        
+        .settings-name {
+            font-weight: 600;
+        }
+        
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: var(--white);
+            display: flex;
+            justify-content: space-around;
+            padding: 15px 0;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+            max-width: 480px;
+            width: calc(100% - 40px);
+            border-radius: 20px;
+        }
+        
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            color: var(--dark);
+            font-size: 12px;
+            transition: var(--transition);
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 10px;
+        }
+        
+        .nav-item.active {
+            color: var(--primary);
+            background-color: rgba(30, 58, 138, 0.1);
+        }
+        
+        .nav-item:hover {
+            transform: translateY(-3px);
+        }
+        
+        .nav-icon {
+            font-size: 20px;
+        }
+        
+        /* Section Visibility */
+        .section {
+            display: none;
+        }
+        
+        .section.active {
+            display: block;
+        }
+        
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content {
+            background-color: var(--white);
+            border-radius: 15px;
+            padding: 25px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.2);
+            position: relative;
+            z-index: 1001;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .modal-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: var(--primary);
+        }
+        
+        .close-modal {
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--dark);
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: var(--transition);
+        }
+        
+        .form-input:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(30, 58, 138, 0.2);
+        }
+        
+        .form-select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            background-color: white;
+            cursor: pointer;
+        }
+        
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            width: 100%;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary);
+            color: var(--white);
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--primary-light);
+        }
+        
+        .btn-secondary {
+            background-color: #f1f1f1;
+            color: var(--dark);
+        }
+        
+        .btn-secondary:hover {
+            background-color: #e1e1e1;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .payment-info {
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        
+        .countdown {
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--primary);
+            margin: 20px 0;
+        }
+        
+        /* Special Effects */
+        @keyframes secretAnimation {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .secret-animation {
+            animation: secretAnimation 2s infinite;
+        }
+        
+        .investment-highlight {
+            border: 2px solid var(--secondary);
+            position: relative;
+        }
+        
+        .investment-highlight::after {
+            content: 'POPULAR';
+            position: absolute;
+            top: -10px;
+            right: 10px;
+            background-color: var(--secondary);
+            color: var(--dark);
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: bold;
+            z-index: 3;
+        }
+        
+        .dashboard-bar {
+            height: 8px;
+            background: linear-gradient(to right, var(--secondary), var(--secondary-light), var(--secondary));
+            position: relative;
+            margin: 0 15px;
+            border-radius: 0 0 5px 5px;
+        }
+        
+        .dashboard-bar::before {
+            content: '';
+            position: absolute;
+            top: -5px;
+            left: 0;
+            right: 0;
+            height: 10px;
+            background: var(--secondary);
+            border-radius: 50%;
+        }
+        
+        /* New Styles for Added Features */
+        .warning-message {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .success-message {
+            background-color: #d1edff;
+            color: #0c5460;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            border: 1px solid #bee5eb;
+        }
+        
+        .withdrawal-fee {
+            font-size: 14px;
+            color: var(--gray);
+            margin-top: 5px;
+        }
+        
+        .glow-effect {
+            box-shadow: 0 0 15px rgba(30, 58, 138, 0.5);
+            animation: glow 2s infinite alternate;
+        }
+        
+        @keyframes glow {
+            from {
+                box-shadow: 0 0 10px rgba(30, 58, 138, 0.5);
+            }
+            to {
+                box-shadow: 0 0 20px rgba(30, 58, 138, 0.8);
+            }
+        }
+        
+        .invite-section {
+            padding: 20px;
+            margin: 0 15px 20px;
+        }
+        
+        .invite-code {
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            text-align: center;
+            border: 2px dashed #dee2e6;
+        }
+        
+        .invite-link {
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            text-align: center;
+            border: 2px dashed #dee2e6;
+            word-break: break-all;
+        }
+        
+        .team-section {
+            padding: 20px;
+            margin: 0 15px 20px;
+        }
+        
+        .team-stats {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        
+        .team-stat {
+            text-align: center;
+            flex: 1;
+        }
+        
+        .team-stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary);
+        }
+        
+        .team-stat-label {
+            font-size: 14px;
+            color: var(--gray);
+        }
+        
+        .team-list {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+        
+        .team-member {
+            background-color: var(--white);
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: var(--shadow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .member-details {
+            flex: 1;
+        }
+        
+        .member-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .member-status {
+            font-size: 14px;
+        }
+        
+        .member-status.active {
+            color: var(--accent);
+        }
+        
+        .member-status.unactivated {
+            color: var(--primary);
+        }
+        
+        .member-commission {
+            font-weight: bold;
+            color: var(--primary);
+        }
+        
+        .orders-section {
+            padding: 20px;
+            margin: 0 15px 20px;
+        }
+        
+        .order-item {
+            background-color: var(--white);
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: var(--shadow);
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .order-details {
+            flex: 1;
+        }
+        
+        .order-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .order-status {
+            font-size: 14px;
+        }
+        
+        .order-status.pending {
+            color: var(--warning);
+        }
+        
+        .order-status.successful {
+            color: var(--accent);
+        }
+        
+        .order-amount {
+            font-weight: bold;
+            color: var(--primary);
+        }
+        
+        /* WhatsApp Group Button */
+        .whatsapp-group-btn {
+            position: fixed;
+            bottom: 100px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            background-color: #25D366;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 20px rgba(37, 211, 102, 0.5);
+            z-index: 99;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .whatsapp-group-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 25px rgba(37, 211, 102, 0.7);
+        }
+        
+        .whatsapp-group-btn i {
+            color: white;
+            font-size: 32px;
+        }
+        
+        /* Processing Screen Styles */
+        .processing-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            color: var(--white);
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .processing-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        .processing-title {
+            font-size: 28px;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        
+        .processing-message {
+            font-size: 18px;
+            margin-bottom: 30px;
+            max-width: 400px;
+            line-height: 1.5;
+        }
+        
+        .processing-countdown {
+            font-size: 48px;
+            font-weight: bold;
+            margin: 20px 0;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 15px 30px;
+            border-radius: 10px;
+            min-width: 150px;
+        }
+        
+        .processing-note {
+            font-size: 14px;
+            margin-top: 20px;
+            opacity: 0.8;
+            max-width: 400px;
+        }
+        
+        /* Enhanced Deposit Modal Styles */
+        .deposit-options {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .deposit-option {
+            flex: 1;
+            text-align: center;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .deposit-option.active {
+            border-color: var(--primary);
+            background-color: rgba(30, 58, 138, 0.1);
+        }
+        
+        .deposit-option:hover {
+            transform: translateY(-3px);
+        }
+        
+        .deposit-amount {
+            font-weight: bold;
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+        
+        .deposit-bonus {
+            font-size: 12px;
+            color: var(--accent);
+        }
+        
+        .payment-details {
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .payment-detail {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        
+        .payment-detail:last-child {
+            margin-bottom: 0;
+        }
+        
+        .payment-detail-label {
+            color: var(--gray);
+        }
+        
+        .payment-detail-value {
+            font-weight: 600;
+        }
+        
+        .payment-detail-value.reference {
+            font-family: monospace;
+            background-color: #e9ecef;
+            padding: 2px 5px;
+            border-radius: 4px;
+        }
+        
+        .payment-steps {
+            margin-bottom: 20px;
+        }
+        
+        .payment-step {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .payment-step-number {
+            width: 24px;
+            height: 24px;
+            background-color: var(--primary);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            margin-right: 10px;
+        }
+        
+        .payment-step-text {
+            font-size: 14px;
+        }
+        
+        .payment-qr {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .payment-qr img {
+            max-width: 200px;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+        }
+        
+        .payment-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .payment-actions .btn {
+            flex: 1;
+        }
+        
+        /* Enhanced Withdrawal Modal Styles */
+        .wallet-selection {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .wallet-option {
+            flex: 1;
+            text-align: center;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .wallet-option.active {
+            border-color: var(--primary);
+            background-color: rgba(30, 58, 138, 0.1);
+        }
+        
+        .wallet-option:hover {
+            transform: translateY(-3px);
+        }
+        
+        .wallet-icon-large {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        
+        .wallet-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .wallet-balance {
+            font-size: 14px;
+            color: var(--gray);
+        }
+        
+        .withdrawal-summary {
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .withdrawal-detail {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        
+        .withdrawal-detail:last-child {
+            margin-bottom: 0;
+        }
+        
+        .withdrawal-detail-label {
+            color: var(--gray);
+        }
+        
+        .withdrawal-detail-value {
+            font-weight: 600;
+        }
+        
+        .withdrawal-detail-value.fee {
+            color: var(--error);
+        }
+        
+        .withdrawal-detail-value.net {
+            color: var(--success);
+            font-size: 18px;
+        }
+        
+        /* Success Animation */
+        .success-animation {
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .success-icon {
+            font-size: 64px;
+            color: var(--success);
+            margin-bottom: 20px;
+            animation: bounce 1s;
+        }
+        
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
+            40% {transform: translateY(-10px);}
+            60% {transform: translateY(-5px);}
+        }
+        
+        .success-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: var(--success);
+        }
+        
+        .success-message {
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 480px) {
+            .platform-container, .dashboard-container {
+                border-radius: 15px;
+            }
+            
+            .form-container {
+                padding: 20px;
+            }
+            
+            .platform-header h1 {
+                font-size: 2.2rem;
+            }
+            
+            .header {
+                padding: 15px;
+            }
+            
+            .platform-logo {
+                font-size: 24px;
+            }
+            
+            .banner-slider {
+                height: 180px;
+            }
+            
+            .whatsapp-group-btn {
+                bottom: 90px;
+                right: 15px;
+                width: 55px;
+                height: 55px;
+            }
+            
+            .whatsapp-group-btn i {
+                font-size: 28px;
+            }
+            
+            .processing-title {
+                font-size: 24px;
+            }
+            
+            .processing-message {
+                font-size: 16px;
+            }
+            
+            .processing-countdown {
+                font-size: 36px;
+            }
+            
+            .deposit-options, .wallet-selection {
+                flex-direction: column;
+            }
+            
+            .payment-actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated Cubes Background -->
+    <div class="animated-cubes">
+        <div class="cube"></div>
+        <div class="cube"></div>
+        <div class="cube"></div>
+        <div class="cube"></div>
+        <div class="cube"></div>
+    </div>
+
+    <!-- WhatsApp Group Button -->
+    <div class="whatsapp-group-btn" id="whatsapp-group-btn">
+        <i class="fab fa-whatsapp"></i>
+    </div>
+
+    <!-- Processing Screen -->
+    <div class="processing-screen" id="processing-screen">
+        <div class="processing-icon">
+            <i class="fas fa-clock"></i>
+        </div>
+        <div class="processing-title">Processing Your Deposit</div>
+        <div class="processing-message">Please don't close this page. We are processing your payment.</div>
+        <div class="processing-countdown" id="processing-countdown">0:30</div>
+        <div class="processing-message">Manager is approving your deposit...</div>
+        <div class="processing-note">Once approved, funds will be automatically added to your Recharge Wallet.</div>
+    </div>
+
+    <!-- Authentication Section -->
+    <section id="auth-section">
+        <div class="platform-container">
+            <div class="platform-decoration platform-1"></div>
+            <div class="platform-decoration platform-2"></div>
+            
+            <div class="platform-header">
+                <h1>Sentech 📡</h1>
+                <p>Connect to your digital future</p>
+            </div>
+            
+            <div class="platform-bar"></div>
+            
+            <div class="form-container">
+                <div class="message" id="message"></div>
+                
+                <div class="form-toggle">
+                    <div class="toggle-slider"></div>
+                    <div class="toggle-btn active" data-form="login">Login</div>
+                    <div class="toggle-btn" data-form="signup">Sign Up</div>
+                </div>
+                
+                <form id="login-form" class="form active">
+                    <div class="form-group">
+                        <label for="login-email">Email</label>
+                        <input type="email" id="login-email" class="form-control" placeholder="your@email.com" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="login-password">Password</label>
+                        <input type="password" id="login-password" class="form-control" placeholder="Enter your password" required>
+                    </div>
+                    
+                    <div class="form-options">
+                        <div class="remember-me">
+                            <input type="checkbox" id="remember">
+                            <label for="remember">Remember me</label>
+                        </div>
+                        <a href="#" class="forgot-password" id="forgot-password">Forgot Password?</a>
+                    </div>
+                    
+                    <button type="submit" class="submit-btn" id="login-btn">
+                        <span class="btn-text">Connect</span>
+                    </button>
+                </form>
+                
+                <form id="signup-form" class="form">
+                    <div class="form-group">
+                        <label for="signup-email">Email</label>
+                        <input type="email" id="signup-email" class="form-control" placeholder="your@email.com" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="signup-password">Password</label>
+                        <input type="password" id="signup-password" class="form-control" placeholder="Create a password" required>
+                        <div class="password-strength">
+                            <div class="strength-meter" id="password-strength-meter"></div>
+                        </div>
+                        <div class="password-info">Use 8+ characters with a mix of letters, numbers & symbols</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="confirm-password">Confirm Password</label>
+                        <input type="password" id="confirm-password" class="form-control" placeholder="Confirm your password" required>
+                        <div id="password-match" class="password-info"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="referral">Referral Code <span style="color:#777; font-weight:normal">(Optional)</span></label>
+                        <input type="text" id="referral" class="form-control" placeholder="Enter referral code if you have one">
+                    </div>
+                    
+                    <button type="submit" class="submit-btn" id="signup-btn">
+                        <span class="btn-text">Create Account</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Dashboard Section -->
+    <section id="dashboard-section">
+        <div class="dashboard-container">
+            <!-- Header Section -->
+            <div class="header">
+                <div class="header-top">
+                    <div class="platform-logo">
+                        <i class="fas fa-satellite-dish"></i>
+                        Sentech Hub
+                    </div>
+                </div>
+                <div class="action-buttons">
+                    <div class="action-btn" id="checkin-btn">Check-in</div>
+                    <div class="action-btn" id="rewards-btn">Rewards</div>
+                    <div class="action-btn" id="invite-btn">Invite</div>
+                    <div class="action-btn" id="team-btn">Team</div>
+                </div>
+            </div>
+            
+            <div class="dashboard-bar"></div>
+            
+            <!-- Home Section -->
+            <div id="home-section" class="section active">
+                <!-- Banner Slider -->
+                <div class="banner-slider">
+                    <div class="slider-container">
+                        <div class="slide" style="background-image: url('https://images.unsplash.com/photo-1581094794329-c8112a89af12?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80')">
+                            <div class="slide-content">
+                                <div class="slide-title">Data Network Package</div>
+                                <div class="slide-description">High-speed connectivity solutions</div>
+                            </div>
+                        </div>
+                        <div class="slide" style="background-image: url('https://images.unsplash.com/photo-1558494949-ef010cbdcc31?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80')">
+                            <div class="slide-content">
+                                <div class="slide-title">Satellite Services</div>
+                                <div class="slide-description">Global coverage with premium bandwidth</div>
+                            </div>
+                        </div>
+                        <div class="slide" style="background-image: url('https://images.unsplash.com/photo-1518709268805-4e9042af2176?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80')">
+                            <div class="slide-content">
+                                <div class="slide-title">Enterprise Bundle</div>
+                                <div class="slide-description">Complete telecom solutions for businesses</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="slider-indicators">
+                        <div class="indicator active"></div>
+                        <div class="indicator"></div>
+                        <div class="indicator"></div>
+                    </div>
+                </div>
+                
+                <!-- Balance Section -->
+                <div class="balance-section">
+                    <div class="section-title">
+                        <i class="fas fa-wallet"></i>
+                        My Digital Wallet
+                    </div>
+                    <div class="balance-cards">
+                        <div class="balance-card primary">
+                            <div class="balance-label">Current Balance</div>
+                            <div class="balance-value">R0.00</div>
+                        </div>
+                        <div class="balance-card">
+                            <div class="balance-label">Data Points</div>
+                            <div class="balance-value">0</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Menu Section -->
+                <div class="menu-section">
+                    <div class="section-title">
+                        <i class="fas fa-satellite"></i>
+                        Today's Featured Services
+                    </div>
+                    <div class="menu-grid">
+                        <div class="menu-item">
+                            <div class="menu-image" style="background-image: url('https://images.unsplash.com/photo-1581094794329-c8112a89af12?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80')">
+                                <div class="menu-badge">NEW</div>
+                            </div>
+                            <div class="menu-details">
+                                <div class="menu-name">Basic Data Plan</div>
+                                <div class="menu-price">R200</div>
+                                <div class="menu-earnings">Earn R320 (1 day)</div>
+                            </div>
+                        </div>
+                        <div class="menu-item">
+                            <div class="menu-image" style="background-image: url('https://images.unsplash.com/photo-1558494949-ef010cbdcc31?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80')">
+                                <div class="menu-badge">HOT</div>
+                            </div>
+                            <div class="menu-details">
+                                <div class="menu-name">Satellite Internet</div>
+                                <div class="menu-price">R300</div>
+                                <div class="menu-earnings">Earn R520 (1 day)</div>
+                            </div>
+                        </div>
+                        <div class="menu-item">
+                            <div class="menu-image" style="background-image: url('https://images.unsplash.com/photo-1518709268805-4e9042af2176?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80')"></div>
+                            <div class="menu-details">
+                                <div class="menu-name">Enterprise Network</div>
+                                <div class="menu-price">R450</div>
+                                <div class="menu-earnings">Earn R750 (1 day)</div>
+                            </div>
+                        </div>
+                        <div class="menu-item secret-animation">
+                            <div class="menu-image" style="background-image: url('https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80')"></div>
+                            <div class="menu-details">
+                                <div class="menu-name">5G Premium</div>
+                                <div class="menu-price">R800</div>
+                                <div class="menu-earnings">Earn R1380 (1 day)</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Investment Section -->
+                <div class="investment-section">
+                    <div class="section-title">
+                        <i class="fas fa-chart-line"></i>
+                        Investment Packages
+                    </div>
+                    <div class="investment-grid">
+                        <div class="investment-item investment-highlight">
+                            <div class="investment-image" style="background-image: url('https://images.unsplash.com/photo-1581094794329-c8112a89af12?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80')"></div>
+                            <div class="investment-details">
+                                <div class="investment-name">Network Starter</div>
+                                <div class="investment-info">Earn R14 daily for 32 days</div>
+                            </div>
+                            <div class="investment-amount">R70</div>
+                        </div>
+                        <div class="investment-item">
+                            <div class="investment-image" style="background-image: url('https://images.unsplash.com/photo-1558494949-ef010cbdcc31?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80')"></div>
+                            <div class="investment-details">
+                                <div class="investment-name">Satellite Basic</div>
+                                <div class="investment-info">Earn R28 daily for 32 days</div>
+                            </div>
+                            <div class="investment-amount">R140</div>
+                        </div>
+                        <div class="investment-item">
+                            <div class="investment-image" style="background-image: url('https://images.unsplash.com/photo-1518709268805-4e9042af2176?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80')"></div>
+                            <div class="investment-details">
+                                <div class="investment-name">Broadband Pro</div>
+                                <div class="investment-info">Earn R42 daily for 32 days</div>
+                            </div>
+                            <div class="investment-amount">R210</div>
+                        </div>
+                        <div class="investment-item">
+                            <div class="investment-image" style="background-image: url('https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80')"></div>
+                            <div class="investment-details">
+                                <div class="investment-name">Enterprise VIP</div>
+                                <div class="investment-info">Earn R140 daily for 32 days</div>
+                            </div>
+                            <div class="investment-amount">R700</div>
+                        </div>
+                        <!-- Additional packages -->
+                        <div class="investment-item">
+                            <div class="investment-image" style="background-image: url('https://images.unsplash.com/photo-1560419015-7c427e8ae5ba?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80')"></div>
+                            <div class="investment-details">
+                                <div class="investment-name">Fiber Optic Plus</div>
+                                <div class="investment-info">Earn R280 daily for 32 days</div>
+                            </div>
+                            <div class="investment-amount">R1400</div>
+                        </div>
+                        <div class="investment-item">
+                            <div class="investment-image" style="background-image: url('https://images.unsplash.com/photo-1542744095-fcf48d80b0fd?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80')"></div>
+                            <div class="investment-details">
+                                <div class="investment-name">Cloud Network Elite</div>
+                                <div class="investment-info">Earn R420 daily for 32 days</div>
+                            </div>
+                            <div class="investment-amount">R2100</div>
+                        </div>
+                        <div class="investment-item">
+                            <div class="investment-image" style="background-image: url('https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80')"></div>
+                            <div class="investment-details">
+                                <div class="investment-name">Telecom Ultimate</div>
+                                <div class="investment-info">Earn R700 daily for 32 days</div>
+                            </div>
+                            <div class="investment-amount">R3500</div>
+                        </div>
+                        <div class="investment-item">
+                            <div class="investment-image" style="background-image: url('https://images.unsplash.com/photo-1551434678-e076c223a692?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80')"></div>
+                            <div class="investment-details">
+                                <div class="investment-name">Global Satellite Network</div>
+                                <div class="investment-info">Earn R1400 daily for 32 days</div>
+                            </div>
+                            <div class="investment-amount">R7000</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Menu Section -->
+            <div id="menu-section" class="section">
+                <div class="investment-section">
+                    <div class="section-title">
+                        <i class="fas fa-satellite"></i>
+                        All Investment Packages
+                    </div>
+                    <div class="investment-grid">
+                        <div class="investment-item investment-highlight">
+                            <div class="investment-image" style="background-image: url('https://images.unsplash.com/photo-1581094794329-c8112a89af12?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80')"></div>
+                            <div class="investment-details">
+                                <div class="investment-name">Network Starter</div>
+                                <div class="investment-info">Earn R14 daily for 32 days</div>
+                            </div>
+                            <div class="investment-amount">R70</div>
+                        </div>
+                        <div class="investment-item">
+                            <div class="investment-image" style="background-image: url('https://images.unsplash.com/photo-1558494949-ef010cbdcc31?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80')"></div>
+                            <div class="investment-details">
+                                <div class="investment-name">Satellite Basic</div>
+                                <div class="investment-info">Earn R28 daily for 32 days</div>
+                            </div>
+                            <div class="investment-amount">R140</div>
+                        </div>
+                        <div class="investment-item">
+                            <div class="investment-image" style="background-image: url('https://images.unsplash.com/photo-1518709268805-4e9042af2176?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80')"></div>
+                            <div class="investment-details">
+                                <div class="investment-name">Broadband Pro</div>
+                                <div class="investment-info">Earn R42 daily for 32 days</div>
+                            </div>
+                            <div class="investment-amount">R210</div>
+                        </div>
+                        <div class="investment-item">
+                            <div class="investment-image" style="background-image: url('https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80')"></div>
+                            <div class="investment-details">
+                                <div class="investment-name">Enterprise VIP</div>
+                                <div class="investment-info">Earn R140 daily for 32 days</div>
+                            </div>
+                            <div class="investment-amount">R700</div>
+                        </div>
+                        <!-- Additional packages -->
+                        <div class="investment-item">
+                            <div class="investment-image" style="background-image: url('https://images.unsplash.com/photo-1560419015-7c427e8ae5ba?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80')"></div>
+                            <div class="investment-details">
+                                <div class="investment-name">Fiber Optic Plus</div>
+                                <div class="investment-info">Earn R280 daily for 32 days</div>
+                            </div>
+                            <div class="investment-amount">R1400</div>
+                        </div>
+                        <div class="investment-item">
+                            <div class="investment-image" style="background-image: url('https://images.unsplash.com/photo-1542744095-fcf48d80b0fd?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80')"></div>
+                            <div class="investment-details">
+                                <div class="investment-name">Cloud Network Elite</div>
+                                <div class="investment-info">Earn R420 daily for 32 days</div>
+                            </div>
+                            <div class="investment-amount">R2100</div>
+                        </div>
+                        <div class="investment-item">
+                            <div class="investment-image" style="background-image: url('https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80')"></div>
+                            <div class="investment-details">
+                                <div class="investment-name">Telecom Ultimate</div>
+                                <div class="investment-info">Earn R700 daily for 32 days</div>
+                            </div>
+                            <div class="investment-amount">R3500</div>
+                        </div>
+                        <div class="investment-item">
+                            <div class="investment-image" style="background-image: url('https://images.unsplash.com/photo-1551434678-e076c223a692?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80')"></div>
+                            <div class="investment-details">
+                                <div class="investment-name">Global Satellite Network</div>
+                                <div class="investment-info">Earn R1400 daily for 32 days</div>
+                            </div>
+                            <div class="investment-amount">R7000</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="menu-section">
+                    <div class="section-title">
+                        <i class="fas fa-network-wired"></i>
+                        All Service Packages
+                    </div>
+                    <div class="menu-grid">
+                        <div class="menu-item">
+                            <div class="menu-image" style="background-image: url('https://images.unsplash.com/photo-1581094794329-c8112a89af12?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80')"></div>
+                            <div class="menu-details">
+                                <div class="menu-name">Basic Data Plan</div>
+                                <div class="menu-price">R200</div>
+                                <div class="menu-earnings">Earn R320 (1 day)</div>
+                            </div>
+                        </div>
+                        <div class="menu-item">
+                            <div class="menu-image" style="background-image: url('https://images.unsplash.com/photo-1558494949-ef010cbdcc31?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80')"></div>
+                            <div class="menu-details">
+                                <div class="menu-name">Satellite Internet</div>
+                                <div class="menu-price">R300</div>
+                                <div class="menu-earnings">Earn R520 (1 day)</div>
+                            </div>
+                        </div>
+                        <div class="menu-item">
+                            <div class="menu-image" style="background-image: url('https://images.unsplash.com/photo-1518709268805-4e9042af2176?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80')"></div>
+                            <div class="menu-details">
+                                <div class="menu-name">Enterprise Network</div>
+                                <div class="menu-price">R450</div>
+                                <div class="menu-earnings">Earn R750 (1 day)</div>
+                            </div>
+                        </div>
+                        <div class="menu-item">
+                            <div class="menu-image" style="background-image: url('https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80')"></div>
+                            <div class="menu-details">
+                                <div class="menu-name">5G Premium</div>
+                                <div class="menu-price">R800</div>
+                                <div class="menu-earnings">Earn R1380 (1 day)</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- My Profile Section -->
+            <div id="myprofile-section" class="section">
+                <div class="profile-card">
+                    <div class="profile-avatar" id="profile-avatar">JD</div>
+                    <div class="profile-name" id="profile-name">John Doe</div>
+                    <div class="profile-email" id="profile-email">john.doe@example.com</div>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-value">R0.00</div>
+                            <div class="stat-label">Current Balance</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">0</div>
+                            <div class="stat-label">Data Points</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">0</div>
+                            <div class="stat-label">Active Services</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">R0.00</div>
+                            <div class="stat-label">Total Earnings</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Wallet Section -->
+                <div class="balance-section">
+                    <div class="section-title">
+                        <i class="fas fa-wallet"></i>
+                        My Wallets
+                    </div>
+                    <div class="wallet-grid">
+                        <div class="wallet-card primary">
+                            <div class="wallet-icon">💰</div>
+                            <div class="wallet-value">R0.00</div>
+                            <div class="wallet-label">Recharge Wallet</div>
+                        </div>
+                        <div class="wallet-card">
+                            <div class="wallet-icon">💳</div>
+                            <div class="wallet-value">R0.00</div>
+                            <div class="wallet-label">Income Wallet</div>
+                        </div>
+                        <div class="wallet-card">
+                            <div class="wallet-icon">📊</div>
+                            <div class="wallet-value">R0.00</div>
+                            <div class="wallet-label">Commission</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="balance-section">
+                    <div class="section-title">
+                        <i class="fas fa-bolt"></i>
+                        Quick Actions
+                    </div>
+                    <div class="action-grid">
+                        <div class="action-card" id="deposit-btn">
+                            <div class="action-icon">⬆️</div>
+                            <div class="action-label">Deposit</div>
+                        </div>
+                        <div class="action-card" id="withdraw-btn">
+                            <div class="action-icon">⬇️</div>
+                            <div class="action-label">Withdraw</div>
+                        </div>
+                        <div class="action-card" id="transfer-btn">
+                            <div class="action-icon">🔄</div>
+                            <div class="action-label">Transfer</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Settings Section -->
+                <div class="balance-section">
+                    <div class="section-title">
+                        <i class="fas fa-cog"></i>
+                        Account Settings
+                    </div>
+                    <div class="settings-grid">
+                        <div class="settings-item" id="bank-btn">
+                            <div class="settings-details">
+                                <div class="settings-icon">🏦</div>
+                                <div class="settings-name">Bind Bank Account</div>
+                            </div>
+                            <div class="settings-arrow">›</div>
+                        </div>
+                        <div class="settings-item" id="password-btn">
+                            <div class="settings-details">
+                                <div class="settings-icon">🔒</div>
+                                <div class="settings-name">Change Password</div>
+                            </div>
+                            <div class="settings-arrow">›</div>
+                        </div>
+                        <div class="settings-item" id="support-btn">
+                            <div class="settings-details">
+                                <div class="settings-icon">📞</div>
+                                <div class="settings-name">Customer Service</div>
+                            </div>
+                            <div class="settings-arrow">›</div>
+                        </div>
+                        <div class="settings-item" id="records-btn">
+                            <div class="settings-details">
+                                <div class="settings-icon">📋</div>
+                                <div class="settings-name">Transaction Records</div>
+                            </div>
+                            <div class="settings-arrow">›</div>
+                        </div>
+                        <div class="settings-item" id="orders-btn">
+                            <div class="settings-details">
+                                <div class="settings-icon">📦</div>
+                                <div class="settings-name">My Services</div>
+                            </div>
+                            <div class="settings-arrow">›</div>
+                        </div>
+                        <div class="settings-item" id="logout-btn">
+                            <div class="settings-details">
+                                <div class="settings-icon">🚪</div>
+                                <div class="settings-name">Log Out</div>
+                            </div>
+                            <div class="settings-arrow">›</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Orders Section -->
+            <div id="orders-section" class="section">
+                <div class="orders-section">
+                    <div class="section-title">
+                        <i class="fas fa-shopping-bag"></i>
+                        My Services
+                    </div>
+                    <div id="no-orders-message">
+                        <p style="text-align: center; padding: 20px; color: #777;">No active services</p>
+                    </div>
+                    <div id="orders-list" style="display: none;">
+                        <!-- Services will be dynamically added here -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Team Section -->
+            <div id="team-section" class="section">
+                <div class="team-section">
+                    <div class="section-title">
+                        <i class="fas fa-users"></i>
+                        My Network
+                    </div>
+                    <div class="team-stats">
+                        <div class="team-stat">
+                            <div class="team-stat-value" id="active-members">0</div>
+                            <div class="team-stat-label">Active Members</div>
+                        </div>
+                        <div class="team-stat">
+                            <div class="team-stat-value" id="unactivated-members">0</div>
+                            <div class="team-stat-label">Unactivated Members</div>
+                        </div>
+                        <div class="team-stat">
+                            <div class="team-stat-value" id="total-commission">R0</div>
+                            <div class="team-stat-label">Total Commission</div>
+                        </div>
+                    </div>
+                    <div id="no-team-message">
+                        <p style="text-align: center; padding: 20px; color: #777;">No network members yet</p>
+                    </div>
+                    <div id="team-list" class="team-list" style="display: none;">
+                        <!-- Team members will be dynamically added here -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Invite Section -->
+            <div id="invite-section" class="section">
+                <div class="invite-section">
+                    <div class="section-title">
+                        <i class="fas fa-user-plus"></i>
+                        Expand Your Network
+                    </div>
+                    <div class="invite-code">
+                        <h3>Your Invitation Code</h3>
+                        <p id="invitation-code" style="font-size: 24px; font-weight: bold; color: var(--primary);">SENTECH123ABC</p>
+                    </div>
+                    <div class="invite-link">
+                        <h3>Your Invitation Link</h3>
+                        <p id="invitation-link" style="font-size: 14px; color: var(--dark);">sentech-platform.vercel.app/?ref=SENTECH123ABC</p>
+                    </div>
+                    <div class="balance-section">
+                        <div class="section-title">
+                            <i class="fas fa-gift"></i>
+                            Network Rewards
+                        </div>
+                        <p style="margin-bottom: 15px;">Earn R22 commission for each active member you invite!</p>
+                        <div class="action-grid">
+                            <div class="action-card" id="share-whatsapp">
+                                <div class="action-icon"><i class="fab fa-whatsapp"></i></div>
+                                <div class="action-label">Share on WhatsApp</div>
+                            </div>
+                            <div class="action-card" id="share-facebook">
+                                <div class="action-icon"><i class="fab fa-facebook"></i></div>
+                                <div class="action-label">Share on Facebook</div>
+                            </div>
+                            <div class="action-card" id="copy-link">
+                                <div class="action-icon"><i class="fas fa-copy"></i></div>
+                                <div class="action-label">Copy Link</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Bottom Navigation -->
+            <div class="bottom-nav">
+                <div class="nav-item active" data-target="home-section">
+                    <div class="nav-icon"><i class="fas fa-home"></i></div>
+                    <div>Home</div>
+                </div>
+                <div class="nav-item" data-target="menu-section">
+                    <div class="nav-icon"><i class="fas fa-satellite"></i></div>
+                    <div>Services</div>
+                </div>
+                <div class="nav-item" data-target="myprofile-section">
+                    <div class="nav-icon"><i class="fas fa-user"></i></div>
+                    <div>Profile</div>
+                </div>
+                <div class="nav-item" data-target="orders-section">
+                    <div class="nav-icon"><i class="fas fa-network-wired"></i></div>
+                    <div>My Services</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal for Bank Account Binding -->
+        <div id="bank-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="modal-title">Bind Bank Account</div>
+                    <div class="close-modal">&times;</div>
+                </div>
+                <form id="bank-form">
+                    <div class="form-group">
+                        <label class="form-label" for="full-name">Full Name</label>
+                        <input type="text" id="full-name" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="bank-name">Bank Name</label>
+                        <input type="text" id="bank-name" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="account-number">Account Number</label>
+                        <input type="text" id="account-number" class="form-input" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Bind Account</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal for Password Change -->
+        <div id="password-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="modal-title">Change Password</div>
+                    <div class="close-modal">&times;</div>
+                </div>
+                <form id="password-form">
+                    <div class="form-group">
+                        <label class="form-label" for="old-password">Old Password</label>
+                        <input type="password" id="old-password" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="new-password">New Password</label>
+                        <input type="password" id="new-password" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="confirm-password">Confirm New Password</label>
+                        <input type="password" id="confirm-password" class="form-input" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Change Password</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Enhanced Modal for Deposit -->
+        <div id="deposit-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="modal-title">Make a Deposit</div>
+                    <div class="close-modal">&times;</div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Select Amount</label>
+                    <div class="deposit-options">
+                        <div class="deposit-option" data-amount="70">
+                            <div class="deposit-amount">R70</div>
+                            <div class="deposit-bonus">+3 Points</div>
+                        </div>
+                        <div class="deposit-option" data-amount="140">
+                            <div class="deposit-amount">R140</div>
+                            <div class="deposit-bonus">+6 Points</div>
+                        </div>
+                        <div class="deposit-option" data-amount="210">
+                            <div class="deposit-amount">R210</div>
+                            <div class="deposit-bonus">+9 Points</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="custom-amount">Or Enter Custom Amount (Minimum R70)</label>
+                    <input type="number" id="custom-amount" class="form-input" min="70" placeholder="Enter amount">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="payment-channel">Payment Channel</label>
+                    <select id="payment-channel" class="form-select" required>
+                        <option value="">Select a channel</option>
+                        <option value="discovery">Discovery Bank</option>
+                        <option value="tymebank">Tymebank</option>
+                    </select>
+                </div>
+                
+                <div id="payment-details" class="payment-details" style="display: none;">
+                    <!-- Payment details will be inserted here -->
+                </div>
+                
+                <div class="payment-steps" style="display: none;">
+                    <div class="payment-step">
+                        <div class="payment-step-number">1</div>
+                        <div class="payment-step-text">Transfer the exact amount to the account details above</div>
+                    </div>
+                    <div class="payment-step">
+                        <div class="payment-step-number">2</div>
+                        <div class="payment-step-text">Use the reference code provided</div>
+                    </div>
+                    <div class="payment-step">
+                        <div class="payment-step-number">3</div>
+                        <div class="payment-step-text">Click "I've Paid" once payment is complete</div>
+                    </div>
+                </div>
+                
+                <div class="payment-actions" style="display: none;">
+                    <button id="proceed-payment" class="btn btn-primary">I've Paid</button>
+                    <button id="cancel-payment" class="btn btn-secondary">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Enhanced Modal for Withdrawal -->
+        <div id="withdraw-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="modal-title">Withdraw Funds</div>
+                    <div class="close-modal">&times;</div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Select Wallet</label>
+                    <div class="wallet-selection">
+                        <div class="wallet-option" data-wallet="income">
+                            <div class="wallet-icon-large">💳</div>
+                            <div class="wallet-name">Income Wallet</div>
+                            <div class="wallet-balance">R0.00</div>
+                        </div>
+                        <div class="wallet-option" data-wallet="commission">
+                            <div class="wallet-icon-large">📊</div>
+                            <div class="wallet-name">Commission</div>
+                            <div class="wallet-balance">R0.00</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="withdraw-amount">Amount (Minimum R50)</label>
+                    <input type="number" id="withdraw-amount" class="form-input" min="50" required>
+                </div>
+                
+                <div id="withdrawal-summary" class="withdrawal-summary" style="display: none;">
+                    <!-- Withdrawal summary will be inserted here -->
+                </div>
+                
+                <div class="payment-actions" style="display: none;">
+                    <button id="confirm-withdrawal" class="btn btn-primary">Confirm Withdrawal</button>
+                    <button id="cancel-withdrawal" class="btn btn-secondary">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal for Payment Confirmation -->
+        <div id="payment-confirm-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="modal-title">Payment Confirmation</div>
+                    <div class="close-modal">&times;</div>
+                </div>
+                <div class="warning-message">
+                    <strong>Note:</strong> Please pay using immediate payment
+                </div>
+                <p>Have you completed the payment?</p>
+                <div class="btn-group">
+                    <button id="payment-yes" class="btn btn-primary">Yes, I've Paid</button>
+                    <button id="payment-no" class="btn btn-secondary">No, Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal for Payment Warning -->
+        <div id="payment-warning-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="modal-title">⚠️ Warning</div>
+                    <div class="close-modal">&times;</div>
+                </div>
+                <div class="warning-message">
+                    <strong>Warning:</strong> If you click yes and you didn't pay, your account will be banned 🚫
+                </div>
+                <p>Are you sure you have completed the payment?</p>
+                <div class="btn-group">
+                    <button id="payment-confirm-yes" class="btn btn-primary">Yes, I'm Sure</button>
+                    <button id="payment-confirm-no" class="btn btn-secondary">No, Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal for Countdown -->
+        <div id="countdown-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="modal-title">Processing Payment</div>
+                </div>
+                <p>Your payment is being processed. Please wait...</p>
+                <div class="countdown" id="countdown-timer">0:30</div>
+            </div>
+        </div>
+
+        <!-- Modal for Investment Confirmation -->
+        <div id="investment-confirm-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="modal-title">Confirm Service Purchase</div>
+                    <div class="close-modal">&times;</div>
+                </div>
+                <p id="investment-confirm-text">Are you sure you want to purchase this service package?</p>
+                <div class="btn-group">
+                    <button id="investment-yes" class="btn btn-primary">Yes, Purchase</button>
+                    <button id="investment-no" class="btn btn-secondary">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Success Modal -->
+        <div id="success-modal" class="modal">
+            <div class="modal-content">
+                <div class="success-animation">
+                    <div class="success-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="success-title">Success!</div>
+                    <div class="success-message" id="success-message">Your transaction was completed successfully.</div>
+                    <button id="success-ok" class="btn btn-primary">OK</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        // Firebase Authentication State Listener
+        document.addEventListener('DOMContentLoaded', function() {
+            // WhatsApp Group Button
+            document.getElementById('whatsapp-group-btn').addEventListener('click', function() {
+                window.open('https://chat.whatsapp.com/EQZd2kHQPWLKTkOp9p5Vka?mode=hqrt1', '_blank');
+            });
+
+            // Check for referral code in URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const refCode = urlParams.get('ref');
+            if (refCode) {
+                // Switch to signup form and set the referral code
+                document.querySelector('[data-form="signup"]').click();
+                document.getElementById('referral').value = refCode;
+            }
+
+            // Check authentication state
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    // User is signed in
+                    showDashboard(user);
+                } else {
+                    // User is signed out
+                    showAuth();
+                }
+            });
+
+            // Initialize authentication functionality
+            initAuth();
+            
+            // Initialize dashboard functionality (will be called when user logs in)
+            function initDashboard() {
+                // Banner Slider Functionality
+                const sliderContainer = document.querySelector('.slider-container');
+                const slides = document.querySelectorAll('.slide');
+                const indicators = document.querySelectorAll('.indicator');
+                let currentSlide = 0;
+                const slideCount = slides.length;
+                
+                // Set up slider indicators
+                indicators.forEach((indicator, index) => {
+                    indicator.addEventListener('click', () => {
+                        currentSlide = index;
+                        updateSlider();
+                    });
+                });
+                
+                // Auto slide every 5 seconds
+                setInterval(() => {
+                    currentSlide = (currentSlide + 1) % slideCount;
+                    updateSlider();
+                }, 5000);
+                
+                function updateSlider() {
+                    // Update slider position
+                    sliderContainer.style.transform = `translateX(-${currentSlide * 100}%)`;
+                    
+                    // Update active indicator
+                    indicators.forEach((indicator, index) => {
+                        if (index === currentSlide) {
+                            indicator.classList.add('active');
+                        } else {
+                            indicator.classList.remove('active');
+                        }
+                    });
+                }
+                
+                // Add hover effects to menu items
+                const menuItems = document.querySelectorAll('.menu-item');
+                menuItems.forEach(item => {
+                    item.addEventListener('mouseenter', function() {
+                        this.style.transform = 'translateY(-5px)';
+                        this.style.boxShadow = '0 10px 20px rgba(0, 0, 0, 0.1)';
+                    });
+                    
+                    item.addEventListener('mouseleave', function() {
+                        this.style.transform = 'translateY(0)';
+                        this.style.boxShadow = '0 5px 15px rgba(0, 0, 0, 0.05)';
+                    });
+                });
+                
+                // Bottom navigation functionality
+                const navItems = document.querySelectorAll('.nav-item');
+                navItems.forEach(item => {
+                    item.addEventListener('click', function() {
+                        const targetId = this.getAttribute('data-target');
+                        
+                        // Update active nav item
+                        navItems.forEach(nav => nav.classList.remove('active'));
+                        this.classList.add('active');
+                        
+                        // Show target section
+                        document.querySelectorAll('.section').forEach(section => {
+                            section.classList.remove('active');
+                        });
+                        document.getElementById(targetId).classList.add('active');
+                    });
+                });
+                
+                // Header action buttons
+                document.getElementById('checkin-btn').addEventListener('click', function() {
+                    handleCheckin();
+                });
+                
+                document.getElementById('rewards-btn').addEventListener('click', function() {
+                    exchangeRewardPoints();
+                });
+                
+                document.getElementById('invite-btn').addEventListener('click', function() {
+                    document.querySelectorAll('.section').forEach(section => {
+                        section.classList.remove('active');
+                    });
+                    document.getElementById('invite-section').classList.add('active');
+                    
+                    // Update nav
+                    navItems.forEach(nav => nav.classList.remove('active'));
+                });
+                
+                document.getElementById('team-btn').addEventListener('click', function() {
+                    document.querySelectorAll('.section').forEach(section => {
+                        section.classList.remove('active');
+                    });
+                    document.getElementById('team-section').classList.add('active');
+                    
+                    // Update nav
+                    navItems.forEach(nav => nav.classList.remove('active'));
+                    
+                    // Load team data
+                    loadTeamData();
+                });
+                
+                // Secret animation for the special item
+                const secretItem = document.querySelector('.secret-animation');
+                secretItem.addEventListener('click', function() {
+                    alert("You found the premium network feature! Enjoy 10% bonus on your next service purchase with code: NETWORK10");
+                });
+                
+                // Service package click functionality
+                const investmentItems = document.querySelectorAll('.investment-item');
+                investmentItems.forEach(item => {
+                    item.addEventListener('click', function() {
+                        const investmentName = this.querySelector('.investment-name').textContent;
+                        const investmentAmount = parseFloat(this.querySelector('.investment-amount').textContent.replace('R', ''));
+                        
+                        // Check if user has enough balance
+                        if (userData.rechargeBalance < investmentAmount) {
+                            alert(`Insufficient balance! You need R${investmentAmount} in your Recharge Wallet to purchase ${investmentName}`);
+                            return;
+                        }
+                        
+                        // Show confirmation modal
+                        document.getElementById('investment-confirm-text').textContent = `Are you sure you want to purchase R${investmentAmount} ${investmentName} service package?`;
+                        document.getElementById('investment-confirm-modal').style.display = 'flex';
+                        
+                        // Store investment details for confirmation
+                        window.currentInvestment = {
+                            name: investmentName,
+                            amount: investmentAmount,
+                            element: this
+                        };
+                    });
+                });
+                
+                // Menu service purchase functionality
+                const menuInvestmentItems = document.querySelectorAll('.menu-item');
+                menuInvestmentItems.forEach(item => {
+                    item.addEventListener('click', function() {
+                        const menuName = this.querySelector('.menu-name').textContent;
+                        const menuPrice = parseFloat(this.querySelector('.menu-price').textContent.replace('R', ''));
+                        
+                        // Check if user has enough balance
+                        if (userData.rechargeBalance < menuPrice) {
+                            alert(`Insufficient balance! You need R${menuPrice} in your Recharge Wallet to purchase ${menuName}`);
+                            return;
+                        }
+                        
+                        // Show confirmation modal
+                        document.getElementById('investment-confirm-text').textContent = `Are you sure you want to purchase R${menuPrice} ${menuName} service?`;
+                        document.getElementById('investment-confirm-modal').style.display = 'flex';
+                        
+                        // Store investment details for confirmation
+                        window.currentInvestment = {
+                            name: menuName,
+                            amount: menuPrice,
+                            element: this,
+                            isMenu: true
+                        };
+                    });
+                });
+                
+                // Service purchase confirmation
+                document.getElementById('investment-yes').addEventListener('click', function() {
+                    const investment = window.currentInvestment;
+                    
+                    // IMMEDIATELY deduct amount from recharge balance
+                    userData.rechargeBalance -= investment.amount;
+                    
+                    // Add to active services
+                    userData.activeInvestments++;
+                    userData.hasInvested = true;
+                    
+                    // Create service order with proper daily income calculation
+                    const orderId = 'SVC' + Date.now();
+                    const dailyIncome = calculateDailyIncome(investment.amount, investment.isMenu);
+                    const days = investment.isMenu ? 1 : 32;
+                    
+                    const order = {
+                        id: orderId,
+                        name: investment.name,
+                        amount: investment.amount,
+                        dailyIncome: dailyIncome,
+                        days: days,
+                        daysRemaining: days,
+                        startDate: new Date().toISOString(),
+                        lastPayoutDate: null, // Will be set when first payout happens
+                        status: 'Active',
+                        type: investment.isMenu ? 'Service' : 'Package'
+                    };
+                    
+                    userData.orders.push(order);
+                    
+                    // Update UI immediately
+                    updateUI();
+                    
+                    // Show success message
+                    showSuccessModal(`Service purchased successfully! You will earn R${dailyIncome} daily from ${investment.name}.`);
+                    
+                    // Close modal
+                    document.getElementById('investment-confirm-modal').style.display = 'none';
+                    
+                    // Save data to Firebase
+                    saveUserData();
+                    
+                    // Update network status if this user was referred
+                    if (userData.referredBy) {
+                        updateTeamMemberStatus(user.uid, 'active');
+                    }
+                });
+                
+                document.getElementById('investment-no').addEventListener('click', function() {
+                    document.getElementById('investment-confirm-modal').style.display = 'none';
+                });
+                
+                // Modal functionality
+                const modals = document.querySelectorAll('.modal');
+                const closeButtons = document.querySelectorAll('.close-modal');
+                
+                // Close modal when clicking X
+                closeButtons.forEach(button => {
+                    button.addEventListener('click', function() {
+                        this.closest('.modal').style.display = 'none';
+                    });
+                });
+                
+                // Close modal when clicking outside
+                modals.forEach(modal => {
+                    modal.addEventListener('click', function(e) {
+                        if (e.target === this) {
+                            this.style.display = 'none';
+                        }
+                    });
+                });
+                
+                // Bank Account Binding
+                document.getElementById('bank-btn').addEventListener('click', function() {
+                    document.getElementById('bank-modal').style.display = 'flex';
+                });
+                
+                document.getElementById('bank-form').addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const fullName = document.getElementById('full-name').value;
+                    const bankName = document.getElementById('bank-name').value;
+                    const accountNumber = document.getElementById('account-number').value;
+                    
+                    // In a real app, you would send this data to a server
+                    showSuccessModal(`Bank account binding successful!\n\nFull Name: ${fullName}\nBank Name: ${bankName}\nAccount Number: ${accountNumber}`);
+                    document.getElementById('bank-modal').style.display = 'none';
+                    this.reset();
+                });
+                
+                // Change Password
+                document.getElementById('password-btn').addEventListener('click', function() {
+                    document.getElementById('password-modal').style.display = 'flex';
+                });
+                
+                document.getElementById('password-form').addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const oldPassword = document.getElementById('old-password').value;
+                    const newPassword = document.getElementById('new-password').value;
+                    const confirmPassword = document.getElementById('confirm-password').value;
+                    
+                    if (newPassword !== confirmPassword) {
+                        alert('New passwords do not match!');
+                        return;
+                    }
+                    
+                    // In a real app, you would verify old password and update to new password
+                    showSuccessModal('Password changed successfully!');
+                    document.getElementById('password-modal').style.display = 'none';
+                    this.reset();
+                });
+                
+                // Customer Service
+                document.getElementById('support-btn').addEventListener('click', function() {
+                    window.open('https://wa.me/27631287462', '_blank');
+                });
+                
+                // Transaction Records
+                document.getElementById('records-btn').addEventListener('click', function() {
+                    alert('Detailed transaction records would appear here.');
+                });
+                
+                // Services
+                document.getElementById('orders-btn').addEventListener('click', function() {
+                    document.querySelectorAll('.section').forEach(section => {
+                        section.classList.remove('active');
+                    });
+                    document.getElementById('orders-section').classList.add('active');
+                    
+                    // Update nav
+                    navItems.forEach(nav => nav.classList.remove('active'));
+                    document.querySelector('[data-target="orders-section"]').classList.add('active');
+                    
+                    // Update services list
+                    updateOrdersList();
+                });
+                
+                // Logout
+                document.getElementById('logout-btn').addEventListener('click', function() {
+                    if(confirm('Are you sure you want to log out?')) {
+                        signOut(auth).then(() => {
+                            // Sign-out successful.
+                            showSuccessModal('You have been logged out successfully.');
+                            setTimeout(() => {
+                                showAuth();
+                            }, 1500);
+                        }).catch((error) => {
+                            // An error happened.
+                            alert('Error logging out: ' + error.message);
+                        });
+                    }
+                });
+                
+                // Enhanced Deposit functionality
+                document.getElementById('deposit-btn').addEventListener('click', function() {
+                    document.getElementById('deposit-modal').style.display = 'flex';
+                    resetDepositModal();
+                });
+                
+                // Deposit amount selection
+                const depositOptions = document.querySelectorAll('.deposit-option');
+                depositOptions.forEach(option => {
+                    option.addEventListener('click', function() {
+                        // Remove active class from all options
+                        depositOptions.forEach(opt => opt.classList.remove('active'));
+                        // Add active class to clicked option
+                        this.classList.add('active');
+                        // Set custom amount to selected value
+                        document.getElementById('custom-amount').value = this.getAttribute('data-amount');
+                        // Update payment details if channel is selected
+                        updatePaymentDetails();
+                    });
+                });
+                
+                // Custom amount input
+                document.getElementById('custom-amount').addEventListener('input', function() {
+                    const amount = this.value;
+                    // Remove active class from all options if custom amount is entered
+                    if (amount) {
+                        depositOptions.forEach(opt => opt.classList.remove('active'));
+                    }
+                    // Update payment details if channel is selected
+                    updatePaymentDetails();
+                });
+                
+                // Show payment details when channel is selected
+                document.getElementById('payment-channel').addEventListener('change', function() {
+                    updatePaymentDetails();
+                });
+                
+                // Proceed with payment
+                document.getElementById('proceed-payment').addEventListener('click', function() {
+                    const amount = getDepositAmount();
+                    const channel = document.getElementById('payment-channel').value;
+                    
+                    if (!amount || amount < 70) {
+                        alert('Minimum deposit amount is R70');
+                        return;
+                    }
+                    
+                    if (!channel) {
+                        alert('Please select a payment channel');
+                        return;
+                    }
+                    
+                    document.getElementById('deposit-modal').style.display = 'none';
+                    document.getElementById('payment-confirm-modal').style.display = 'flex';
+                });
+                
+                // Cancel payment
+                document.getElementById('cancel-payment').addEventListener('click', function() {
+                    document.getElementById('deposit-modal').style.display = 'none';
+                });
+                
+                // Payment confirmation
+                document.getElementById('payment-yes').addEventListener('click', function() {
+                    document.getElementById('payment-confirm-modal').style.display = 'none';
+                    document.getElementById('payment-warning-modal').style.display = 'flex';
+                });
+                
+                document.getElementById('payment-no').addEventListener('click', function() {
+                    document.getElementById('payment-confirm-modal').style.display = 'none';
+                    document.getElementById('deposit-modal').style.display = 'flex';
+                });
+                
+                // Payment warning confirmation
+                document.getElementById('payment-confirm-yes').addEventListener('click', function() {
+                    document.getElementById('payment-warning-modal').style.display = 'none';
+                    
+                    // Create deposit record with pending status
+                    const amount = getDepositAmount();
+                    const depositId = 'DEP' + Date.now();
+                    
+                    const depositRecord = {
+                        id: depositId,
+                        amount: amount,
+                        status: 'pending',
+                        date: new Date().toISOString(),
+                        userId: user.uid
+                    };
+                    
+                    // Add to transaction records
+                    if (!userData.transactions) userData.transactions = [];
+                    userData.transactions.push(depositRecord);
+                    
+                    // Update UI
+                    updateUI();
+                    
+                    // Save data
+                    saveUserData();
+                    
+                    // IMMEDIATELY add funds to recharge balance
+                    userData.rechargeBalance += amount;
+                    
+                    // IMMEDIATELY add data points (3 points for R70)
+                    userData.rewardPoints += Math.floor(amount / 70) * 3;
+                    
+                    // Update UI immediately
+                    updateUI();
+                    
+                    // Save data immediately
+                    saveUserData();
+                    
+                    // Show success message immediately
+                    showSuccessModal(`Deposit of R${amount} has been successfully processed! Funds added to your Recharge Wallet.`);
+                    
+                    // Reset form
+                    resetDepositModal();
+                });
+                
+                document.getElementById('payment-confirm-no').addEventListener('click', function() {
+                    document.getElementById('payment-warning-modal').style.display = 'none';
+                    document.getElementById('deposit-modal').style.display = 'flex';
+                });
+                
+                // Enhanced Withdrawal functionality
+                document.getElementById('withdraw-btn').addEventListener('click', function() {
+                    // Check if user has purchased services
+                    if (!userData.hasInvested) {
+                        alert('You need to purchase a service package before you can withdraw funds.');
+                        return;
+                    }
+                    
+                    document.getElementById('withdraw-modal').style.display = 'flex';
+                    resetWithdrawalModal();
+                });
+                
+                // Wallet selection for withdrawal
+                const walletOptions = document.querySelectorAll('.wallet-option');
+                walletOptions.forEach(option => {
+                    option.addEventListener('click', function() {
+                        // Remove active class from all options
+                        walletOptions.forEach(opt => opt.classList.remove('active'));
+                        // Add active class to clicked option
+                        this.classList.add('active');
+                        // Update withdrawal summary
+                        updateWithdrawalSummary();
+                    });
+                });
+                
+                // Withdrawal amount input
+                document.getElementById('withdraw-amount').addEventListener('input', function() {
+                    updateWithdrawalSummary();
+                });
+                
+                // Confirm withdrawal
+                document.getElementById('confirm-withdrawal').addEventListener('click', function() {
+                    const amount = parseFloat(document.getElementById('withdraw-amount').value);
+                    const selectedWallet = document.querySelector('.wallet-option.active');
+                    
+                    if (!selectedWallet) {
+                        alert('Please select a wallet');
+                        return;
+                    }
+                    
+                    const wallet = selectedWallet.getAttribute('data-wallet');
+                    
+                    // Check if user has enough balance in selected wallet
+                    let walletBalance = 0;
+                    if (wallet === 'income') {
+                        walletBalance = userData.incomeBalance;
+                    } else if (wallet === 'commission') {
+                        walletBalance = userData.commissionBalance;
+                    }
+                    
+                    if (amount > walletBalance) {
+                        alert(`Insufficient balance in ${wallet} wallet!`);
+                        return;
+                    }
+                    
+                    // Calculate withdrawal fee (15%)
+                    const fee = amount * 0.15;
+                    const netAmount = amount - fee;
+                    
+                    // Deduct amount from selected wallet
+                    if (wallet === 'income') {
+                        userData.incomeBalance -= amount;
+                    } else if (wallet === 'commission') {
+                        userData.commissionBalance -= amount;
+                    }
+                    
+                    // Update UI
+                    updateUI();
+                    
+                    // Save data
+                    saveUserData();
+                    
+                    // Redirect to WhatsApp with withdrawal details
+                    const message = `Withdrawal Request:\nAmount: R${amount}\nFee: R${fee.toFixed(2)}\nNet Amount: R${netAmount.toFixed(2)}\nWallet: ${wallet}`;
+                    const whatsappUrl = `https://wa.me/0818535051?text=${encodeURIComponent(message)}`;
+                    window.open(whatsappUrl, '_blank');
+                    
+                    // Show success message
+                    showSuccessModal(`Withdrawal request of R${amount} from ${wallet} wallet has been submitted. You will receive R${netAmount.toFixed(2)} after fees.`);
+                    
+                    // Close modal
+                    document.getElementById('withdraw-modal').style.display = 'none';
+                    
+                    // Reset form
+                    resetWithdrawalModal();
+                });
+                
+                // Cancel withdrawal
+                document.getElementById('cancel-withdrawal').addEventListener('click', function() {
+                    document.getElementById('withdraw-modal').style.display = 'none';
+                });
+                
+                // Transfer functionality
+                document.getElementById('transfer-btn').addEventListener('click', function() {
+                    alert('Transfer between wallets functionality would open here.');
+                });
+                
+                // Invite section functionality
+                document.getElementById('invitation-code').textContent = userData.invitationCode;
+                document.getElementById('invitation-link').textContent = `sentech-platform.vercel.app/?ref=${userData.invitationCode}`;
+                
+                document.getElementById('share-whatsapp').addEventListener('click', function() {
+                    const message = `Join me at Sentech Platform! Use my invitation code: ${userData.invitationCode} or click: sentech-platform.vercel.app/?ref=${userData.invitationCode}`;
+                    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+                    window.open(whatsappUrl, '_blank');
+                });
+                
+                document.getElementById('share-facebook').addEventListener('click', function() {
+                    alert('Facebook sharing would be implemented here.');
+                });
+                
+                document.getElementById('copy-link').addEventListener('click', function() {
+                    const link = `sentech-platform.vercel.app/?ref=${userData.invitationCode}`;
+                    navigator.clipboard.writeText(link).then(function() {
+                        alert('Invitation link copied to clipboard!');
+                    }, function(err) {
+                        alert('Failed to copy link: ' + err);
+                    });
+                });
+                
+                // Success modal OK button
+                document.getElementById('success-ok').addEventListener('click', function() {
+                    document.getElementById('success-modal').style.display = 'none';
+                });
+            }
+
+            // Initialize user data
+            let userData = {
+                rechargeBalance: 0,
+                incomeBalance: 0,
+                commissionBalance: 0,
+                rewardPoints: 0,
+                activeInvestments: 0,
+                totalEarnings: 0,
+                hasInvested: false,
+                orders: [],
+                team: {
+                    activeMembers: 0,
+                    unactivatedMembers: 0,
+                    totalCommission: 0,
+                    members: []
+                },
+                invitationCode: generateInvitationCode(),
+                lastCheckin: null,
+                referredBy: null,
+                transactions: []
+            };
+            
+            // Load data from Firebase if available
+            function loadUserData(userId) {
+                const userDocRef = doc(db, "users", userId);
+                getDoc(userDocRef).then((docSnap) => {
+                    if (docSnap.exists()) {
+                        userData = { ...userData, ...docSnap.data() };
+                        updateUI();
+                        
+                        // Load team members if any
+                        if (userData.team && userData.team.members && userData.team.members.length > 0) {
+                            loadTeamMembers();
+                        }
+                    } else {
+                        // Create new user document
+                        saveUserData();
+                    }
+                }).catch((error) => {
+                    console.error("Error loading user data:", error);
+                });
+            }
+            
+            // Save user data to Firebase
+            function saveUserData() {
+                if (!auth.currentUser) return;
+                
+                const userDocRef = doc(db, "users", auth.currentUser.uid);
+                setDoc(userDocRef, userData, { merge: true })
+                .then(() => {
+                    console.log("User data saved successfully");
+                })
+                .catch((error) => {
+                    console.error("Error saving user data:", error);
+                });
+            }
+            
+            // Function to calculate daily income based on service amount and type
+            function calculateDailyIncome(amount, isMenu) {
+                if (isMenu) {
+                    // Service packages: R200 -> R320 (60% return), R300 -> R520 (73% return), etc.
+                    if (amount === 200) return 320;
+                    if (amount === 300) return 520;
+                    if (amount === 450) return 750;
+                    if (amount === 800) return 1380;
+                    return amount * 1.6; // Default 60% return for services
+                } else {
+                    // Investment packages: R70 -> R14 (20% daily return)
+                    return amount * 0.2;
+                }
+            }
+            
+            // Function to show processing screen with countdown
+            function showProcessingScreen(amount) {
+                const processingScreen = document.getElementById('processing-screen');
+                const countdownElement = document.getElementById('processing-countdown');
+                
+                // Show processing screen
+                processingScreen.style.display = 'flex';
+                
+                // Start countdown (30 seconds)
+                let timeLeft = 30;
+                
+                const countdown = setInterval(function() {
+                    timeLeft--;
+                    
+                    // Update countdown display
+                    countdownElement.textContent = `0:${timeLeft < 10 ? '0' : ''}${timeLeft}`;
+                    
+                    if (timeLeft <= 0) {
+                        clearInterval(countdown);
+                        
+                        // IMMEDIATELY update deposit status to successful
+                        const depositIndex = userData.transactions.findIndex(t => t.status === 'pending');
+                        if (depositIndex !== -1) {
+                            userData.transactions[depositIndex].status = 'successful';
+                            
+                            // IMMEDIATELY add to recharge balance
+                            userData.rechargeBalance += amount;
+                            
+                            // IMMEDIATELY add data points (3 points for R70)
+                            userData.rewardPoints += Math.floor(amount / 70) * 3;
+                            
+                            // Update UI immediately
+                            updateUI();
+                            
+                            // Save data immediately
+                            saveUserData();
+                            
+                            // Hide processing screen
+                            processingScreen.style.display = 'none';
+                            
+                            // Show success message immediately
+                            showSuccessModal(`Deposit of R${amount} has been successfully processed! Funds added to your Recharge Wallet.`);
+                        }
+                    }
+                }, 1000);
+            }
+            
+            // Function to get deposit amount from form
+            function getDepositAmount() {
+                const customAmount = document.getElementById('custom-amount').value;
+                if (customAmount) {
+                    return parseFloat(customAmount);
+                }
+                
+                const activeOption = document.querySelector('.deposit-option.active');
+                if (activeOption) {
+                    return parseFloat(activeOption.getAttribute('data-amount'));
+                }
+                
+                return 0;
+            }
+            
+            // Function to update payment details in deposit modal
+            function updatePaymentDetails() {
+                const amount = getDepositAmount();
+                const channel = document.getElementById('payment-channel').value;
+                const paymentDetails = document.getElementById('payment-details');
+                const paymentSteps = document.querySelector('.payment-steps');
+                const paymentActions = document.querySelector('.payment-actions');
+                
+                if (amount >= 70 && channel) {
+                    let details = '';
+                    let reference = 'Sentech' + Math.floor(1000 + Math.random() * 9000);
+                    
+                    if (channel === 'discovery') {
+                        details = `
+                            <div class="payment-detail">
+                                <span class="payment-detail-label">Bank:</span>
+                                <span class="payment-detail-value">Discovery Bank</span>
+                            </div>
+                            <div class="payment-detail">
+                                <span class="payment-detail-label">Account Name:</span>
+                                <span class="payment-detail-value">Sentech</span>
+                            </div>
+                            <div class="payment-detail">
+                                <span class="payment-detail-label">Account Number:</span>
+                                <span class="payment-detail-value">18695378176</span>
+                            </div>
+                            <div class="payment-detail">
+                                <span class="payment-detail-label">Reference:</span>
+                                <span class="payment-detail-value reference">${reference}</span>
+                            </div>
+                            <div class="payment-detail">
+                                <span class="payment-detail-label">Amount:</span>
+                                <span class="payment-detail-value">R${amount}</span>
+                            </div>
+                        `;
+                    } else if (channel === 'tymebank') {
+                        details = `
+                            <div class="payment-detail">
+                                <span class="payment-detail-label">Bank:</span>
+                                <span class="payment-detail-value">Tymebank</span>
+                            </div>
+                            <div class="payment-detail">
+                                <span class="payment-detail-label">Account Name:</span>
+                                <span class="payment-detail-value">Sentech</span>
+                            </div>
+                            <div class="payment-detail">
+                                <span class="payment-detail-label">Account Number:</span>
+                                <span class="payment-detail-value">51104524563</span>
+                            </div>
+                            <div class="payment-detail">
+                                <span class="payment-detail-label">Reference:</span>
+                                <span class="payment-detail-value reference">${reference}</span>
+                            </div>
+                            <div class="payment-detail">
+                                <span class="payment-detail-label">Amount:</span>
+                                <span class="payment-detail-value">R${amount}</span>
+                            </div>
+                        `;
+                    }
+                    
+                    paymentDetails.innerHTML = details;
+                    paymentDetails.style.display = 'block';
+                    paymentSteps.style.display = 'block';
+                    paymentActions.style.display = 'flex';
+                } else {
+                    paymentDetails.style.display = 'none';
+                    paymentSteps.style.display = 'none';
+                    paymentActions.style.display = 'none';
+                }
+            }
+            
+            // Function to update withdrawal summary
+            function updateWithdrawalSummary() {
+                const amount = parseFloat(document.getElementById('withdraw-amount').value) || 0;
+                const selectedWallet = document.querySelector('.wallet-option.active');
+                const withdrawalSummary = document.getElementById('withdrawal-summary');
+                const paymentActions = document.querySelectorAll('.payment-actions')[1]; // Second payment actions in withdrawal modal
+                
+                if (amount >= 50 && selectedWallet) {
+                    const wallet = selectedWallet.getAttribute('data-wallet');
+                    
+                    // Check if user has enough balance in selected wallet
+                    let walletBalance = 0;
+                    if (wallet === 'income') {
+                        walletBalance = userData.incomeBalance;
+                    } else if (wallet === 'commission') {
+                        walletBalance = userData.commissionBalance;
+                    }
+                    
+                    if (amount > walletBalance) {
+                        withdrawalSummary.innerHTML = `
+                            <div class="withdrawal-detail">
+                                <span class="withdrawal-detail-label">Status:</span>
+                                <span class="withdrawal-detail-value" style="color: var(--error);">Insufficient Balance</span>
+                            </div>
+                        `;
+                        paymentActions.style.display = 'none';
+                    } else {
+                        // Calculate withdrawal fee (15%)
+                        const fee = amount * 0.15;
+                        const netAmount = amount - fee;
+                        
+                        withdrawalSummary.innerHTML = `
+                            <div class="withdrawal-detail">
+                                <span class="withdrawal-detail-label">Amount:</span>
+                                <span class="withdrawal-detail-value">R${amount}</span>
+                            </div>
+                            <div class="withdrawal-detail">
+                                <span class="withdrawal-detail-label">Fee (15%):</span>
+                                <span class="withdrawal-detail-value fee">-R${fee.toFixed(2)}</span>
+                            </div>
+                            <div class="withdrawal-detail">
+                                <span class="withdrawal-detail-label">You'll Receive:</span>
+                                <span class="withdrawal-detail-value net">R${netAmount.toFixed(2)}</span>
+                            </div>
+                        `;
+                        paymentActions.style.display = 'flex';
+                    }
+                    
+                    withdrawalSummary.style.display = 'block';
+                } else {
+                    withdrawalSummary.style.display = 'none';
+                    paymentActions.style.display = 'none';
+                }
+            }
+            
+            // Function to reset deposit modal
+            function resetDepositModal() {
+                document.querySelectorAll('.deposit-option').forEach(opt => opt.classList.remove('active'));
+                document.getElementById('custom-amount').value = '';
+                document.getElementById('payment-channel').value = '';
+                document.getElementById('payment-details').style.display = 'none';
+                document.querySelector('.payment-steps').style.display = 'none';
+                document.querySelector('.payment-actions').style.display = 'none';
+            }
+            
+            // Function to reset withdrawal modal
+            function resetWithdrawalModal() {
+                document.querySelectorAll('.wallet-option').forEach(opt => opt.classList.remove('active'));
+                document.getElementById('withdraw-amount').value = '';
+                document.getElementById('withdrawal-summary').style.display = 'none';
+                document.querySelectorAll('.payment-actions')[1].style.display = 'none';
+                
+                // Update wallet balances in withdrawal modal
+                document.querySelector('[data-wallet="income"] .wallet-balance').textContent = `R${userData.incomeBalance.toFixed(2)}`;
+                document.querySelector('[data-wallet="commission"] .wallet-balance').textContent = `R${userData.commissionBalance.toFixed(2)}`;
+            }
+            
+            // Function to show success modal
+            function showSuccessModal(message) {
+                document.getElementById('success-message').textContent = message;
+                document.getElementById('success-modal').style.display = 'flex';
+            }
+            
+            function updateUI() {
+                // Update balances
+                document.querySelectorAll('.balance-value')[0].textContent = `R${userData.rechargeBalance.toFixed(2)}`;
+                document.querySelectorAll('.balance-value')[1].textContent = userData.rewardPoints;
+                
+                // Update wallet values
+                document.querySelectorAll('.wallet-value')[0].textContent = `R${userData.rechargeBalance.toFixed(2)}`;
+                document.querySelectorAll('.wallet-value')[1].textContent = `R${userData.incomeBalance.toFixed(2)}`;
+                document.querySelectorAll('.wallet-value')[2].textContent = `R${userData.commissionBalance.toFixed(2)}`;
+                
+                // Update stats
+                document.querySelectorAll('.stat-value')[0].textContent = `R${userData.rechargeBalance.toFixed(2)}`;
+                document.querySelectorAll('.stat-value')[1].textContent = userData.rewardPoints;
+                document.querySelectorAll('.stat-value')[2].textContent = userData.activeInvestments;
+                document.querySelectorAll('.stat-value')[3].textContent = `R${userData.totalEarnings.toFixed(2)}`;
+                
+                // Update team stats
+                document.getElementById('active-members').textContent = userData.team.activeMembers;
+                document.getElementById('unactivated-members').textContent = userData.team.unactivatedMembers;
+                document.getElementById('total-commission').textContent = `R${userData.team.totalCommission}`;
+                
+                // Add glow effect to deposit button if balance is low
+                const depositBtn = document.getElementById('deposit-btn');
+                if (userData.rechargeBalance < 70) {
+                    depositBtn.classList.add('glow-effect');
+                } else {
+                    depositBtn.classList.remove('glow-effect');
+                }
+            }
+            
+            function updateOrdersList() {
+                const ordersList = document.getElementById('orders-list');
+                const noOrdersMessage = document.getElementById('no-orders-message');
+                
+                if (userData.orders.length === 0) {
+                    ordersList.style.display = 'none';
+                    noOrdersMessage.style.display = 'block';
+                } else {
+                    ordersList.style.display = 'block';
+                    noOrdersMessage.style.display = 'none';
+                    
+                    // Clear existing orders
+                    ordersList.innerHTML = '';
+                    
+                    // Add orders
+                    userData.orders.forEach(order => {
+                        const orderElement = document.createElement('div');
+                        orderElement.className = 'order-item';
+                        orderElement.innerHTML = `
+                            <div class="order-details">
+                                <div class="order-name">${order.name}</div>
+                                <div class="order-status">${order.status} (${order.daysRemaining} days left)</div>
+                            </div>
+                            <div class="order-amount">R${order.amount}</div>
+                        `;
+                        ordersList.appendChild(orderElement);
+                    });
+                }
+            }
+            
+            function loadTeamData() {
+                const teamList = document.getElementById('team-list');
+                const noTeamMessage = document.getElementById('no-team-message');
+                
+                if (userData.team.activeMembers === 0 && userData.team.unactivatedMembers === 0) {
+                    teamList.style.display = 'none';
+                    noTeamMessage.style.display = 'block';
+                } else {
+                    teamList.style.display = 'block';
+                    noTeamMessage.style.display = 'none';
+                    
+                    // Clear existing team members
+                    teamList.innerHTML = '';
+                    
+                    // Add team members from userData
+                    userData.team.members.forEach(member => {
+                        const memberElement = document.createElement('div');
+                        memberElement.className = 'team-member';
+                        memberElement.innerHTML = `
+                            <div class="member-details">
+                                <div class="member-name">${member.email}</div>
+                                <div class="member-status ${member.status}">${member.status === 'active' ? 'Active' : 'Unactivated'}</div>
+                            </div>
+                            <div class="member-commission">R${member.commission || 0}</div>
+                        `;
+                        teamList.appendChild(memberElement);
+                    });
+                }
+            }
+            
+            // Function to load team members from referrals
+            function loadTeamMembers() {
+                if (!auth.currentUser) return;
+                
+                const referralsRef = collection(db, "referrals");
+                const q = query(referralsRef, where("inviterId", "==", auth.currentUser.uid));
+                
+                getDocs(q).then((querySnapshot) => {
+                    userData.team.members = [];
+                    userData.team.activeMembers = 0;
+                    userData.team.unactivatedMembers = 0;
+                    userData.team.totalCommission = 0;
+                    
+                    querySnapshot.forEach((doc) => {
+                        const referral = doc.data();
+                        
+                        // Get user data for the invitee
+                        const userDocRef = doc(db, "users", referral.inviteeId);
+                        getDoc(userDocRef).then((userDoc) => {
+                            if (userDoc.exists()) {
+                                const userData = userDoc.data();
+                                const member = {
+                                    email: userData.email || 'Unknown',
+                                    status: referral.status,
+                                    commission: referral.status === 'active' ? 22 : 0
+                                };
+                                
+                                userData.team.members.push(member);
+                                
+                                if (referral.status === 'active') {
+                                    userData.team.activeMembers++;
+                                    userData.team.totalCommission += 22;
+                                } else {
+                                    userData.team.unactivatedMembers++;
+                                }
+                                
+                                // Update UI
+                                updateUI();
+                                loadTeamData();
+                                
+                                // Save updated team data
+                                saveUserData();
+                            }
+                        });
+                    });
+                }).catch((error) => {
+                    console.error("Error loading team members:", error);
+                });
+            }
+            
+            function handleCheckin() {
+                const now = new Date();
+                const currentHour = now.getHours();
+                
+                // Check if it's between 10am and 11am
+                if (currentHour >= 10 && currentHour < 11) {
+                    // Check if user already checked in today
+                    const today = now.toDateString();
+                    if (userData.lastCheckin === today) {
+                        alert('You have already checked in today!');
+                        return;
+                    }
+                    
+                    // Generate random amount between R5 and R10
+                    const randomAmount = (Math.floor(Math.random() * 6) + 5);
+                    
+                    // Add to income wallet
+                    userData.incomeBalance += randomAmount;
+                    userData.lastCheckin = today;
+                    
+                    // Update UI
+                    updateUI();
+                    
+                    // Save data
+                    saveUserData();
+                    
+                    showSuccessModal(`Check-in successful! You received R${randomAmount} in your Income Wallet.`);
+                } else {
+                    alert('Check-in is only available between 10am and 11am!');
+                }
+            }
+            
+            function exchangeRewardPoints() {
+                if (userData.rewardPoints < 3) {
+                    alert('You need at least 3 data points to exchange!');
+                    return;
+                }
+                
+                // Calculate amount (1 point = R1)
+                const amount = userData.rewardPoints;
+                
+                // Add to income wallet
+                userData.incomeBalance += amount;
+                
+                // Reset reward points
+                userData.rewardPoints = 0;
+                
+                // Update UI
+                updateUI();
+                
+                // Save data
+                saveUserData();
+                
+                showSuccessModal(`Successfully exchanged ${amount} data points for R${amount} in your Income Wallet!`);
+            }
+            
+            function processDailyIncome() {
+                const now = new Date();
+                const today = now.toDateString();
+                
+                userData.orders.forEach(order => {
+                    if (order.status === 'Active') {
+                        // For services, payout starts the next day
+                        // For packages, payout starts immediately but we'll simulate daily payouts
+                        const lastPayout = order.lastPayoutDate ? new Date(order.lastPayoutDate) : new Date(order.startDate);
+                        const daysSinceLastPayout = Math.floor((now - lastPayout) / (1000 * 60 * 60 * 24));
+                        
+                        if (daysSinceLastPayout >= 1) {
+                            // Add daily income to wallet
+                            userData.incomeBalance += order.dailyIncome;
+                            userData.totalEarnings += order.dailyIncome;
+                            
+                            // Update last payout date
+                            order.lastPayoutDate = now.toISOString();
+                            
+                            // Reduce days remaining
+                            order.daysRemaining--;
+                            
+                            // If no days remaining, mark as completed
+                            if (order.daysRemaining <= 0) {
+                                order.status = 'Completed';
+                                userData.activeInvestments--;
+                            }
+                            
+                            console.log(`Daily income: R${order.dailyIncome} added from ${order.name}`);
+                        }
+                    }
+                });
+                
+                // Update UI and save data
+                updateUI();
+                saveUserData();
+            }
+            
+            function generateInvitationCode() {
+                const digits = Math.floor(100 + Math.random() * 900);
+                const letters = Array.from({length: 3}, () => 
+                    String.fromCharCode(65 + Math.floor(Math.random() * 26))
+                ).join('');
+                return `SENTECH${digits}${letters}`;
+            }
+            
+            // Function to record referral when a new user signs up
+            function recordReferral(userId, referralCode) {
+                if (!referralCode) return;
+                
+                // Find the user with this referral code
+                const usersRef = collection(db, "users");
+                const q = query(usersRef, where("invitationCode", "==", referralCode));
+                
+                getDocs(q).then((querySnapshot) => {
+                    if (!querySnapshot.empty) {
+                        const inviterDoc = querySnapshot.docs[0];
+                        const inviterId = inviterDoc.id;
+                        
+                        // Update the inviter's team data
+                        const inviterData = inviterDoc.data();
+                        const updatedTeam = {
+                            ...inviterData.team,
+                            unactivatedMembers: (inviterData.team.unactivatedMembers || 0) + 1
+                        };
+                        
+                        updateDoc(doc(db, "users", inviterId), {
+                            team: updatedTeam
+                        });
+                        
+                        // Record the referral relationship
+                        const referralData = {
+                            inviterId: inviterId,
+                            inviteeId: userId,
+                            status: 'unactivated',
+                            date: new Date().toISOString()
+                        };
+                        
+                        addDoc(collection(db, "referrals"), referralData);
+                        
+                        // Update current user's data to show they were referred
+                        userData.referredBy = inviterId;
+                        saveUserData();
+                    }
+                }).catch((error) => {
+                    console.error("Error recording referral:", error);
+                });
+            }
+            
+            // Function to update team member status when they invest
+            function updateTeamMemberStatus(userId, status) {
+                if (!userData.referredBy) return;
+                
+                // Find the referral record
+                const referralsRef = collection(db, "referrals");
+                const q = query(referralsRef, where("inviteeId", "==", userId));
+                
+                getDocs(q).then((querySnapshot) => {
+                    if (!querySnapshot.empty) {
+                        const referralDoc = querySnapshot.docs[0];
+                        const referralData = referralDoc.data();
+                        
+                        // Update the referral status
+                        updateDoc(doc(db, "referrals", referralDoc.id), {
+                            status: status
+                        });
+                        
+                        // Update the inviter's team data
+                        const inviterId = referralData.inviterId;
+                        const inviterDocRef = doc(db, "users", inviterId);
+                        
+                        getDoc(inviterDocRef).then((inviterDoc) => {
+                            if (inviterDoc.exists()) {
+                                const inviterData = inviterDoc.data();
+                                const team = inviterData.team || { activeMembers: 0, unactivatedMembers: 0, totalCommission: 0, members: [] };
+                                
+                                if (status === 'active') {
+                                    team.activeMembers = (team.activeMembers || 0) + 1;
+                                    team.unactivatedMembers = Math.max(0, (team.unactivatedMembers || 0) - 1);
+                                    team.totalCommission = (team.totalCommission || 0) + 22; // R22 commission
+                                    
+                                    // Add the member to the team list
+                                    const member = {
+                                        email: userData.email || 'Unknown',
+                                        status: 'active',
+                                        commission: 22
+                                    };
+                                    team.members.push(member);
+                                }
+                                
+                                updateDoc(inviterDocRef, {
+                                    team: team
+                                });
+                            }
+                        });
+                    }
+                }).catch((error) => {
+                    console.error("Error updating team member status:", error);
+                });
+            }
+            
+            // Simulate daily income (for demo purposes - would be daily in real app)
+            setInterval(function() {
+                processDailyIncome();
+            }, 30000); // Check every 30 seconds for demo (would be 24 hours in real app)
+            
+            function showDashboard(user) {
+                document.getElementById('auth-section').style.display = 'none';
+                document.getElementById('dashboard-section').style.display = 'block';
+                
+                // Update user profile information
+                const displayName = user.displayName || 'User';
+                const email = user.email;
+                const initials = displayName.split(' ').map(n => n[0]).join('').toUpperCase();
+                
+                document.getElementById('profile-avatar').textContent = initials;
+                document.getElementById('profile-name').textContent = displayName;
+                document.getElementById('profile-email').textContent = email;
+                
+                // Load user data from Firebase
+                loadUserData(user.uid);
+                
+                // Initialize dashboard functionality
+                initDashboard();
+                updateUI();
+                
+                // Process any pending daily income
+                processDailyIncome();
+            }
+            
+            function showAuth() {
+                document.getElementById('auth-section').style.display = 'flex';
+                document.getElementById('dashboard-section').style.display = 'none';
+            }
+        });
+
+        // Authentication functionality
+        function initAuth() {
+            // Form toggle functionality
+            const toggleBtns = document.querySelectorAll('.toggle-btn');
+            const toggleSlider = document.querySelector('.toggle-slider');
+            const forms = document.querySelectorAll('.form');
+            
+            toggleBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const formType = this.getAttribute('data-form');
+                    
+                    // Update active button
+                    toggleBtns.forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Move slider
+                    if (formType === 'login') {
+                        toggleSlider.style.transform = 'translateX(0)';
+                    } else {
+                        toggleSlider.style.transform = 'translateX(100%)';
+                    }
+                    
+                    // Show correct form
+                    forms.forEach(form => {
+                        form.classList.remove('active');
+                        if (form.id === `${formType}-form`) {
+                            form.classList.add('active');
+                        }
+                    });
+                    
+                    // Clear any messages
+                    clearMessage();
+                });
+            });
+            
+            // Password strength indicator
+            const passwordInput = document.getElementById('signup-password');
+            const strengthMeter = document.getElementById('password-strength-meter');
+            
+            passwordInput.addEventListener('input', function() {
+                const password = this.value;
+                let strength = 0;
+                
+                // Check password length
+                if (password.length >= 8) strength += 25;
+                
+                // Check for mixed case
+                if (password.match(/[a-z]/) && password.match(/[A-Z]/)) strength += 25;
+                
+                // Check for numbers
+                if (password.match(/\d/)) strength += 25;
+                
+                // Check for special characters
+                if (password.match(/[^a-zA-Z\d]/)) strength += 25;
+                
+                // Update strength meter
+                strengthMeter.style.width = `${strength}%`;
+                
+                // Update color based on strength
+                if (strength < 50) {
+                    strengthMeter.style.background = '#e74c3c';
+                } else if (strength < 75) {
+                    strengthMeter.style.background = '#f39c12';
+                } else {
+                    strengthMeter.style.background = '#2ecc71';
+                }
+            });
+            
+            // Password confirmation check
+            const confirmPasswordInput = document.getElementById('confirm-password');
+            const passwordMatch = document.getElementById('password-match');
+            
+            confirmPasswordInput.addEventListener('input', function() {
+                const password = passwordInput.value;
+                const confirmPassword = this.value;
+                
+                if (confirmPassword === '') {
+                    passwordMatch.textContent = '';
+                } else if (password === confirmPassword) {
+                    passwordMatch.textContent = 'Passwords match!';
+                    passwordMatch.style.color = '#2ecc71';
+                } else {
+                    passwordMatch.textContent = 'Passwords do not match';
+                    passwordMatch.style.color = '#e74c3c';
+                }
+            });
+            
+            // Form submission
+            const loginForm = document.getElementById('login-form');
+            const signupForm = document.getElementById('signup-form');
+            const loginBtn = document.getElementById('login-btn');
+            const signupBtn = document.getElementById('signup-btn');
+            
+            loginForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const email = document.getElementById('login-email').value;
+                const password = document.getElementById('login-password').value;
+                
+                loginUser(email, password);
+            });
+            
+            signupForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const email = document.getElementById('signup-email').value;
+                const password = document.getElementById('signup-password').value;
+                const confirmPassword = document.getElementById('confirm-password').value;
+                const referralCode = document.getElementById('referral').value;
+                
+                // Check if passwords match
+                if (password !== confirmPassword) {
+                    showMessage('Passwords do not match', 'error');
+                    return;
+                }
+                
+                // Check password strength
+                if (password.length < 8) {
+                    showMessage('Password must be at least 8 characters long', 'error');
+                    return;
+                }
+                
+                registerUser(email, password, referralCode);
+            });
+            
+            // Forgot password functionality
+            document.getElementById('forgot-password').addEventListener('click', function(e) {
+                e.preventDefault();
+                const email = document.getElementById('login-email').value;
+                
+                if (!email) {
+                    showMessage('Please enter your email address first', 'error');
+                    return;
+                }
+                
+                resetPassword(email);
+            });
+            
+            // Input focus effects
+            const inputs = document.querySelectorAll('.form-control');
+            inputs.forEach(input => {
+                input.addEventListener('focus', function() {
+                    this.parentElement.querySelector('label').style.color = 'var(--primary)';
+                });
+                
+                input.addEventListener('blur', function() {
+                    this.parentElement.querySelector('label').style.color = '';
+                });
+            });
+            
+            // Firebase authentication functions
+            function registerUser(email, password, referralCode) {
+                setButtonLoading(signupBtn, true);
+                
+                createUserWithEmailAndPassword(auth, email, password)
+                    .then((userCredential) => {
+                        // Signed up successfully
+                        const user = userCredential.user;
+                        
+                        // Record referral if applicable
+                        if (referralCode) {
+                            recordReferral(user.uid, referralCode);
+                        }
+                        
+                        showMessage('Account created successfully!', 'success');
+                        
+                        // Clear form
+                        signupForm.reset();
+                        strengthMeter.style.width = '0';
+                        passwordMatch.textContent = '';
+                        
+                        // Switch to login form after successful registration
+                        setTimeout(() => {
+                            toggleBtns[0].click();
+                        }, 1500);
+                    })
+                    .catch((error) => {
+                        const errorCode = error.code;
+                        let errorMessage = error.message;
+                        
+                        if (errorCode === 'auth/email-already-in-use') {
+                            errorMessage = 'This email is already registered. Please use a different email or login.';
+                        } else if (errorCode === 'auth/invalid-email') {
+                            errorMessage = 'Invalid email address.';
+                        } else if (errorCode === 'auth/weak-password') {
+                            errorMessage = 'Password is too weak. Please use a stronger password.';
+                        }
+                        
+                        showMessage(errorMessage, 'error');
+                    })
+                    .finally(() => {
+                        setButtonLoading(signupBtn, false);
+                    });
+            }
+            
+            function loginUser(email, password) {
+                setButtonLoading(loginBtn, true);
+                
+                signInWithEmailAndPassword(auth, email, password)
+                    .then((userCredential) => {
+                        // Signed in successfully
+                        const user = userCredential.user;
+                        showMessage('Login successful!', 'success');
+                    })
+                    .catch((error) => {
+                        const errorCode = error.code;
+                        let errorMessage = error.message;
+                        
+                        if (errorCode === 'auth/user-not-found') {
+                            errorMessage = 'No account found with this email. Please sign up first.';
+                        } else if (errorCode === 'auth/wrong-password') {
+                            errorMessage = 'Incorrect password. Please try again.';
+                        } else if (errorCode === 'auth/invalid-email') {
+                            errorMessage = 'Invalid email address.';
+                        } else if (errorCode === 'auth/user-disabled') {
+                            errorMessage = 'This account has been disabled.';
+                        }
+                        
+                        showMessage(errorMessage, 'error');
+                    })
+                    .finally(() => {
+                        setButtonLoading(loginBtn, false);
+                    });
+            }
+            
+            function resetPassword(email) {
+                sendPasswordResetEmail(auth, email)
+                    .then(() => {
+                        showMessage('Password reset email sent! Check your inbox.', 'success');
+                    })
+                    .catch((error) => {
+                        const errorCode = error.code;
+                        let errorMessage = error.message;
+                        
+                        if (errorCode === 'auth/user-not-found') {
+                            errorMessage = 'No account found with this email.';
+                        } else if (errorCode === 'auth/invalid-email') {
+                            errorMessage = 'Invalid email address.';
+                        }
+                        
+                        showMessage(errorMessage, 'error');
+                    });
+            }
+            
+            // Helper functions
+            function showMessage(message, type) {
+                const messageEl = document.getElementById('message');
+                messageEl.textContent = message;
+                messageEl.className = `message ${type}`;
+                messageEl.style.display = 'block';
+                
+                // Auto-hide success messages after 5 seconds
+                if (type === 'success') {
+                    setTimeout(() => {
+                        messageEl.style.display = 'none';
+                    }, 5000);
+                }
+            }
+            
+            function clearMessage() {
+                const messageEl = document.getElementById('message');
+                messageEl.style.display = 'none';
+            }
+            
+            function setButtonLoading(button, isLoading) {
+                const btnText = button.querySelector('.btn-text');
+                
+                if (isLoading) {
+                    button.disabled = true;
+                    btnText.textContent = 'Processing...';
+                    button.insertAdjacentHTML('afterbegin', '<div class="loading"></div>');
+                } else {
+                    button.disabled = false;
+                    const loadingSpinner = button.querySelector('.loading');
+                    if (loadingSpinner) {
+                        loadingSpinner.remove();
+                    }
+                    
+                    if (button.id === 'login-btn') {
+                        btnText.textContent = 'Connect';
+                    } else {
+                        btnText.textContent = 'Create Account';
+                        }
+                }
+            }
+        }
+    </script>
+</body>
+</html>
