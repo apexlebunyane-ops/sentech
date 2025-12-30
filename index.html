@@ -1086,17 +1086,21 @@
             z-index: 1000;
             align-items: center;
             justify-content: center;
+            padding: 15px;
+            overflow-y: auto;
         }
         
         .modal-content {
             background-color: var(--white);
             border-radius: 15px;
-            padding: 25px;
-            width: 90%;
+            padding: 20px;
+            width: 100%;
             max-width: 400px;
+            max-height: 90vh;
             box-shadow: 0 5px 25px rgba(0, 0, 0, 0.2);
             position: relative;
             z-index: 1001;
+            overflow-y: auto;
         }
         
         .modal-header {
@@ -1324,11 +1328,14 @@
             display: flex;
             justify-content: space-between;
             margin-bottom: 20px;
+            flex-wrap: wrap;
         }
         
         .team-stat {
             text-align: center;
             flex: 1;
+            min-width: 100px;
+            margin-bottom: 10px;
         }
         
         .team-stat-value {
@@ -1519,10 +1526,12 @@
             display: flex;
             gap: 10px;
             margin-bottom: 20px;
+            flex-wrap: wrap;
         }
         
         .deposit-option {
             flex: 1;
+            min-width: 100px;
             text-align: center;
             padding: 12px;
             border: 2px solid #e0e0e0;
@@ -1562,6 +1571,7 @@
             display: flex;
             justify-content: space-between;
             margin-bottom: 8px;
+            flex-wrap: wrap;
         }
         
         .payment-detail:last-child {
@@ -1570,10 +1580,13 @@
         
         .payment-detail-label {
             color: var(--gray);
+            min-width: 100px;
         }
         
         .payment-detail-value {
             font-weight: 600;
+            word-break: break-all;
+            text-align: right;
         }
         
         .payment-detail-value.reference {
@@ -1589,11 +1602,12 @@
         
         .payment-step {
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             margin-bottom: 10px;
         }
         
         .payment-step-number {
+            flex-shrink: 0;
             width: 24px;
             height: 24px;
             background-color: var(--primary);
@@ -1608,6 +1622,7 @@
         
         .payment-step-text {
             font-size: 14px;
+            line-height: 1.4;
         }
         
         .payment-qr {
@@ -1616,7 +1631,7 @@
         }
         
         .payment-qr img {
-            max-width: 200px;
+            max-width: 100%;
             border-radius: 10px;
             box-shadow: var(--shadow);
         }
@@ -1624,10 +1639,12 @@
         .payment-actions {
             display: flex;
             gap: 10px;
+            flex-wrap: wrap;
         }
         
         .payment-actions .btn {
             flex: 1;
+            min-width: 120px;
         }
         
         /* Enhanced Withdrawal Modal Styles */
@@ -1635,10 +1652,12 @@
             display: flex;
             gap: 10px;
             margin-bottom: 20px;
+            flex-wrap: wrap;
         }
         
         .wallet-option {
             flex: 1;
+            min-width: 140px;
             text-align: center;
             padding: 15px;
             border: 2px solid #e0e0e0;
@@ -1682,6 +1701,7 @@
             display: flex;
             justify-content: space-between;
             margin-bottom: 8px;
+            flex-wrap: wrap;
         }
         
         .withdrawal-detail:last-child {
@@ -1734,12 +1754,18 @@
         .success-message {
             font-size: 16px;
             margin-bottom: 20px;
+            line-height: 1.4;
         }
         
         /* Responsive Design */
         @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+            
             .platform-container, .dashboard-container {
                 border-radius: 15px;
+                max-width: 100%;
             }
             
             .form-container {
@@ -1755,11 +1781,96 @@
             }
             
             .platform-logo {
-                font-size: 24px;
+                font-size: 20px;
+            }
+            
+            .action-buttons {
+                padding: 5px 10px;
+            }
+            
+            .action-btn {
+                font-size: 12px;
+                padding: 5px 3px;
             }
             
             .banner-slider {
-                height: 180px;
+                height: 160px;
+                margin: 15px 10px;
+            }
+            
+            .slide {
+                padding: 15px;
+            }
+            
+            .slide-title {
+                font-size: 18px;
+            }
+            
+            .slide-description {
+                font-size: 12px;
+            }
+            
+            .balance-section, .menu-section, .investment-section, .myprofile-section, 
+            .invite-section, .team-section, .orders-section {
+                padding: 15px;
+                margin: 0 10px 15px;
+            }
+            
+            .section-title {
+                font-size: 16px;
+            }
+            
+            .balance-cards {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .balance-value {
+                font-size: 22px;
+            }
+            
+            .menu-grid {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            
+            .menu-image {
+                height: 100px;
+            }
+            
+            .investment-item {
+                padding: 12px;
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .investment-amount {
+                margin-top: 10px;
+                align-self: flex-end;
+            }
+            
+            .profile-avatar {
+                width: 60px;
+                height: 60px;
+                font-size: 20px;
+            }
+            
+            .profile-name {
+                font-size: 18px;
+            }
+            
+            .stats-grid, .wallet-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+            
+            .action-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 10px;
+            }
+            
+            .action-icon {
+                font-size: 20px;
             }
             
             .whatsapp-group-btn {
@@ -1773,8 +1884,59 @@
                 font-size: 28px;
             }
             
+            .bottom-nav {
+                width: calc(100% - 20px);
+                padding: 10px 0;
+                bottom: 10px;
+            }
+            
+            .nav-item {
+                font-size: 10px;
+                padding: 3px 5px;
+            }
+            
+            .nav-icon {
+                font-size: 18px;
+            }
+            
+            .modal {
+                padding: 10px;
+            }
+            
+            .modal-content {
+                padding: 15px;
+                max-height: 95vh;
+            }
+            
+            .modal-title {
+                font-size: 18px;
+            }
+            
+            .deposit-options, .wallet-selection {
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .deposit-option, .wallet-option {
+                min-width: 100%;
+            }
+            
+            .payment-actions {
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .payment-actions .btn {
+                min-width: 100%;
+            }
+            
+            .btn-group {
+                flex-direction: column;
+                gap: 8px;
+            }
+            
             .processing-title {
-                font-size: 24px;
+                font-size: 22px;
             }
             
             .processing-message {
@@ -1783,14 +1945,88 @@
             
             .processing-countdown {
                 font-size: 36px;
+                padding: 10px 20px;
+            }
+        }
+        
+        @media (max-width: 320px) {
+            .platform-header h1 {
+                font-size: 1.8rem;
             }
             
-            .deposit-options, .wallet-selection {
-                flex-direction: column;
+            .platform-logo {
+                font-size: 18px;
             }
             
-            .payment-actions {
-                flex-direction: column;
+            .action-btn {
+                font-size: 11px;
+            }
+            
+            .balance-value {
+                font-size: 20px;
+            }
+            
+            .menu-name, .investment-name {
+                font-size: 14px;
+            }
+            
+            .menu-price, .investment-amount {
+                font-size: 16px;
+            }
+            
+            .nav-item {
+                font-size: 9px;
+            }
+            
+            .nav-icon {
+                font-size: 16px;
+            }
+            
+            .modal-title {
+                font-size: 16px;
+            }
+            
+            .deposit-amount {
+                font-size: 16px;
+            }
+        }
+        
+        /* For very small screens */
+        @media (max-height: 600px) {
+            .platform-container {
+                max-height: 90vh;
+                overflow-y: auto;
+            }
+            
+            .dashboard-container {
+                min-height: 85vh;
+            }
+            
+            .banner-slider {
+                height: 140px;
+            }
+            
+            .processing-screen {
+                padding: 10px;
+            }
+            
+            .processing-icon {
+                font-size: 60px;
+            }
+            
+            .processing-title {
+                font-size: 22px;
+                margin-bottom: 5px;
+            }
+            
+            .processing-message {
+                font-size: 14px;
+                margin-bottom: 15px;
+            }
+            
+            .processing-countdown {
+                font-size: 32px;
+                margin: 10px 0;
             }
         }
     </style>
